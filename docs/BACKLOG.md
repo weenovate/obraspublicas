@@ -16,7 +16,7 @@ convertir el backlog en una lista de deseos.
 |---|---|---|---|
 | **F0** ✅ | Fundaciones, tooling, CI, seguridad base, login mínimo con throttle auditado, RDS con tema oscuro medido y primitivos Vue, arnés Playwright, PoC espacial y matriz | — | — |
 | **F1-A** ✅ | Nueve migraciones y seeders, auth completa, roles y políticas, CRUD de usuarios, sesiones revocables, los cinco catálogos con sus reglas de inmutabilidad, campos técnicos, configuración tipada, generador de códigos | 002, 024 | **014, 025** |
-| **F1-B** ▶ lista | CRUD de obras con geometría manual, fechas, concurrencia optimista, papelera lógica, editores cartográficos | 001, 007, 010, 015, 018 | **002, 003, 004, 008, 009** |
+| **F1-B** ✅ | CRUD de obras con geometría manual, fechas, concurrencia optimista, papelera lógica, editores cartográficos | 001, 007, 010, 015, 018 | **002, 003, 004, 008, 009** |
 | **F2** | Ciclo completo de fotos, formulario dinámico, cambio incompatible, galería con estados | 013 | **010, 011, 012** |
 | **F3** | Nominatim, geocodificación inversa, pin móvil, ruta ORS con previsualización y fallback, límites municipales, E2E de editores | — | **005, 006, 007** |
 | **F4** | SPA, capas, filtros, clustering, URL compartible, allowlist, contrato de rendimiento, caché versionado, tema, puente Leaflet completo | 001 | **013, 019, 020, 021** |
@@ -89,6 +89,35 @@ las que otras fases van a apoyarse encima:
 **CA-002 queda en P**: la secuencia atómica está probada con dos transacciones
 concurrentes, pero su enunciado habla de dos altas de obra, y el alta llega en
 F1-B.
+
+---
+
+## Lo que F1-B dejó verificado
+
+| Verificación | Dónde | Sostiene |
+|---|---|---|
+| El punto representativo elegido cumple `ST_Contains` **contra MariaDB** en punto, línea de dos vértices, línea de varios, línea en U, polígono convexo y cóncavo | `tests/Feature/Obras/GeometriaDeObraTest.php` | **CA-003**, RF-GEO-014, ADR-025 |
+| El punto medio aritmético queda contenido sólo 54 veces de 200, y un vértice las 200 | ídem | ADR-025, y que la decisión no se revierta por intuición |
+| El vértice se elige por longitud acumulada, no por índice | ídem | Que el punto caiga en la mitad del recorrido y no en un racimo de vértices |
+| Tipo contra modo, ejes, anillos cerrados y clics repetidos, rechazados con mensaje de negocio | ídem | RF-GEO-005, RF-CAT-004 |
+| Dos ALTAS de obra reciben códigos distintos, y borrar una no devuelve su número | `tests/Feature/Obras/AltaDeObraTest.php` | **CA-002** completo |
+| Un alta rechazada no deja obra, ni evento, ni consume secuencia | ídem | RF-OBR-002, RF-AUD-001 |
+| La fecha efectiva sale de `is_final` —no de la clave `COMPLETED`— y se recalcula al cambiar sólo el estado | ídem | **CA-008**, ADR-008, D3 |
+| La fecha real se conserva al salir de un estado finalizador y deja de gobernar la efectiva | ídem | ADR-008, y que `COALESCE` habría estado mal |
+| La segunda de dos ediciones simultáneas se rechaza y no pisa, sin dejar auditoría | ídem | **CA-009**, ADR-026 |
+| La baja lógica deja `deleted_by` además de `deleted_at`, y la obra sigue contando como uso del catálogo | ídem | **CA-004**, RF-DEL-001 |
+| Los dos roles pueden cargar obras | `tests/Feature/Obras/PantallaDeObrasTest.php` | Matriz de permisos, spec 2.2 |
+| La geometría vuelve al editor idéntica a como se dibujó, sin invertir ejes | ídem | ADR-003, RF-GEO-005 |
+| Las excepciones de dominio llegan como error de formulario, no como 500 | ídem | Usabilidad del backoffice |
+| Se dibuja punto, línea y polígono con el mouse, se deshace un vértice y se guarda | `tests/e2e/obras.spec.js` | **CA-003**, RF-GEO-001…005 |
+| El ciclo completo: dibujar, guardar, reabrir con la geometría dibujada, mandar a papelera | ídem | **CA-004** |
+
+**CA-002 y CA-003 se cierran acá.** CA-004, CA-008 y CA-009 también: la papelera
+lógica, la semántica de fechas y la concurrencia están verificadas de punta a punta.
+
+**Lo que sigue en P y por qué:** CA-001 necesita la aparición en LIVE y en la Web
+(F5 y F4). CA-007 necesita el trazado asistido sobre calles (F3). CA-010 necesita
+las fotos (F2). CA-015 y CA-018 son de F5 y F6.
 
 **CA-024 queda en P**: revocar una sesión desde administración funciona, corta el
 acceso en la petición siguiente y queda auditado. Falta la mitad que necesita

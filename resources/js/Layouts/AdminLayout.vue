@@ -18,7 +18,12 @@ const esAdmin = computed(() => user.value?.role === 'ADMIN')
 const flash = computed(() => page.props.flash ?? {})
 
 const enlaces = computed(() => {
-    const base = [{ href: '/admin', label: 'Inicio' }]
+    // Obras está para los dos roles: es lo que hace el rol Obras Públicas, y la
+    // matriz del spec (2.2) se lo permite igual que al Administrador.
+    const base = [
+        { href: '/admin', label: 'Inicio' },
+        { href: '/obras', label: 'Obras' },
+    ]
 
     if (esAdmin.value) {
         base.push(

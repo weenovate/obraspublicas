@@ -9,7 +9,7 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  variant: { type: String, default: 'primary' }, // primary | secondary | accent | ghost
+  variant: { type: String, default: 'primary' }, // primary | secondary | accent | ghost | danger
   size: { type: String, default: 'md' }, // sm | md | lg
   as: { type: String, default: 'button' }, // button | a
   href: { type: String, default: null },

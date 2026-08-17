@@ -85,6 +85,12 @@ jobs:
       - name: Contraste AA en los dos temas
         run: npm run rds:contraste
 
+      # La inversión de ejes no da ningún error: da un mapa que dibuja Ramallo en
+      # otro continente. La única defensa barata es que el orden se decida en un
+      # solo archivo, y esto lo verifica (ADR-003).
+      - name: Frontera de ejes en el cliente
+        run: npm run ejes:lint
+
       - name: Compilar assets
         run: npm run build
 

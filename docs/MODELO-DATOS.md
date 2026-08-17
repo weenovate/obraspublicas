@@ -128,6 +128,12 @@ comprobado dentro del polígono: ya no hay coordenadas inventadas en el proyecto
   así que la suite incluye aserciones de `EXPLAIN`.
 - **`ST_Contains(geometry, representative_point)` antes de persistir.** Si falla, el
   guardado se rechaza. Vale también para líneas.
+- **Cómo se elige ese punto**, según el tipo (ADR-009 y ADR-025):
+  punto → el punto; polígono → `ST_PointOnSurface`, que lo calcula la base;
+  **línea → un vértice suyo**, el más cercano a la mitad del recorrido medido por
+  longitud geodésica. Para líneas el motor devuelve NULL en `ST_PointOnSurface` y
+  en `ST_Centroid`, y el punto medio aritmético **no** queda contenido de forma
+  confiable: 54 de 200 segmentos medidos.
 - El tipo de geometría debe coincidir con el modo de la subcategoría, validado en
   la aplicación.
 

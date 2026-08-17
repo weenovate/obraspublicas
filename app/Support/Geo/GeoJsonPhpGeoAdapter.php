@@ -99,7 +99,16 @@ final class GeoJsonPhpGeoAdapter
         return $this->ellipsoid;
     }
 
-    private function assertLonLatInRange(float $lon, float $lat): void
+    /**
+     * Verifica el rango de un par `[lon, lat]`, y con eso el orden de los ejes.
+     *
+     * Es pública porque el orden de los ejes es responsabilidad de esta clase y
+     * de ninguna otra (ADR-003): quien valide coordenadas antes de persistirlas
+     * —`WorkGeometry`, por ejemplo— tiene que preguntar acá en lugar de escribir
+     * su propia comparación contra 180 y 90, que es exactamente cómo las dos
+     * convenciones se separan con el tiempo.
+     */
+    public function assertLonLatInRange(float $lon, float $lat): void
     {
         if ($lon < -180.0 || $lon > 180.0) {
             throw new InvalidArgumentException(
