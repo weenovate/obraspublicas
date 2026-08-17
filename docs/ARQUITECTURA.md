@@ -647,6 +647,41 @@ campo se llame igual en las dos.
 
 ---
 
+## ADR-024 · El recorte del IGN se congela por versión y por hash
+
+**Contexto.** Centro y zoom del mapa, viewbox de la geocodificación y las
+coordenadas de los fixtures salen todos del mismo archivo: el polígono del
+partido publicado por el IGN. Es el insumo con más alcance del proyecto y el
+único que viene de afuera.
+
+**Decisión.** El archivo se versiona en `database/geo/` con su fecha en el
+nombre, su manifiesto y su SHA-256. Los valores derivados viven en
+`config/obras.php` y un test los recalcula contra el polígono en cada corrida. Un
+recorte nuevo es un archivo nuevo, nunca una edición en el lugar.
+
+**Por qué el hash y no sólo la URL.** El servicio devuelve lo que el IGN tenga
+publicado hoy; volver a pedirlo mañana puede dar un polígono distinto sin previo
+aviso. Con el hash, «el mapa se movió» deja de ser una discusión y pasa a ser una
+comparación.
+
+**Alternativa descartada: consultar el WFS en tiempo de ejecución.** Ata cada
+carga del mapa a que un servicio de terceros esté disponible, hace que el
+encuadre dependa del día, y convierte una actualización del IGN en un cambio no
+anunciado en producción. El dato oficial se trae una vez, se audita y se congela.
+
+**Consecuencia registrada.** El servicio no publica la fecha del dataset. Se
+documenta la ausencia en el manifiesto en lugar de anotar un valor plausible: la
+reproducibilidad la dan la URL, el filtro, el momento de descarga y el hash, y
+esos cuatro sí están completos.
+
+**El centro es el centroide, no `ST_PointOnSurface`.** En este polígono el
+segundo devuelve un punto apoyado sobre el borde sur: contenido, pero pésimo
+centro de mapa. Para la geometría de cada obra sigue mandando
+`ST_PointOnSurface` (ADR-009), donde lo que hace falta es un punto garantizado
+dentro de figuras que pueden ser cóncavas, no uno estéticamente centrado.
+
+---
+
 ## Notas del entorno de construcción
 
 Dos limitaciones del entorno donde se ejecutó esta iteración, que **no** afectan al

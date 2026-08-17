@@ -13,10 +13,13 @@ use Illuminate\Support\Facades\DB;
 /**
  * @extends Factory<Work>
  *
- * Las coordenadas son del orden de Ramallo pero NO son datos verificados: el
- * recorte oficial del IGN entra por G3. Son asimétricas a propósito —longitud
- * ≈ −60, latitud ≈ −33— para que un intercambio de ejes rompa una aserción en
- * lugar de compensarse.
+ * Las coordenadas ahora son REALES: el centroide del partido de Ramallo, tomado
+ * del recorte oficial del IGN que cerró G3 y comprobado dentro del polígono
+ * (`database/geo/MANIFIESTO.md`). No se escriben acá: salen de `config/obras.php`,
+ * para que un recorte nuevo no deje los fixtures apuntando a otro lado.
+ *
+ * Siguen siendo asimétricas —longitud ≈ −60, latitud ≈ −33— y eso importa: si
+ * alguien intercambia los ejes, la aserción rompe en vez de compensarse.
  */
 class WorkFactory extends Factory
 {
@@ -57,11 +60,14 @@ class WorkFactory extends Factory
     public function configure(): static
     {
         return $this->afterMaking(function (Work $work): void {
+            [$lon, $lat] = config('obras.mapa.centro');
+            $punto = sprintf("ST_GeomFromText('POINT(%.6F %.6F)', 4326)", $lon, $lat);
+
             // Eloquent necesita algo en las columnas para que el INSERT sea
             // válido; se reemplaza inmediatamente por la geometría real.
             $work->setRawAttributes(array_merge($work->getAttributes(), [
-                'geometry' => DB::raw("ST_GeomFromText('POINT(-60.123456 -33.487654)', 4326)"),
-                'representative_point' => DB::raw("ST_GeomFromText('POINT(-60.123456 -33.487654)', 4326)"),
+                'geometry' => DB::raw($punto),
+                'representative_point' => DB::raw($punto),
             ]), true);
         });
     }

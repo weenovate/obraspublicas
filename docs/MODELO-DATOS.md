@@ -112,6 +112,11 @@ que parezca uno.
 El esquema existe desde F1-A; el CRUD con geometría es de F1-B. Lo de abajo son los
 invariantes que ese CRUD tiene que hacer cumplir.
 
+Las coordenadas de referencia —centro, bbox y viewbox— salen del recorte oficial
+del IGN, congelado por hash en `database/geo/` (ADR-024, compuerta G3), y se leen
+de `config('obras.mapa')`. Los fixtures de la suite usan el centroide del partido,
+comprobado dentro del polígono: ya no hay coordenadas inventadas en el proyecto.
+
 ### Invariantes de `works` que ya están decididos
 
 - **`geometry` `GEOMETRY NOT NULL` y `representative_point` `POINT NOT NULL`**,

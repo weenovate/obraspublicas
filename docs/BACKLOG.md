@@ -16,7 +16,7 @@ convertir el backlog en una lista de deseos.
 |---|---|---|---|
 | **F0** ✅ | Fundaciones, tooling, CI, seguridad base, login mínimo con throttle auditado, RDS con tema oscuro medido y primitivos Vue, arnés Playwright, PoC espacial y matriz | — | — |
 | **F1-A** ✅ | Nueve migraciones y seeders, auth completa, roles y políticas, CRUD de usuarios, sesiones revocables, los cinco catálogos con sus reglas de inmutabilidad, campos técnicos, configuración tipada, generador de códigos | 002, 024 | **014, 025** |
-| **F1-B** ⛔ G3 | CRUD de obras con geometría manual, fechas, concurrencia optimista, papelera lógica, editores cartográficos | 001, 007, 010, 015, 018 | **002, 003, 004, 008, 009** |
+| **F1-B** ▶ lista | CRUD de obras con geometría manual, fechas, concurrencia optimista, papelera lógica, editores cartográficos | 001, 007, 010, 015, 018 | **002, 003, 004, 008, 009** |
 | **F2** | Ciclo completo de fotos, formulario dinámico, cambio incompatible, galería con estados | 013 | **010, 011, 012** |
 | **F3** | Nominatim, geocodificación inversa, pin móvil, ruta ORS con previsualización y fallback, límites municipales, E2E de editores | — | **005, 006, 007** |
 | **F4** | SPA, capas, filtros, clustering, URL compartible, allowlist, contrato de rendimiento, caché versionado, tema, puente Leaflet completo | 001 | **013, 019, 020, 021** |
@@ -73,6 +73,18 @@ las que otras fases van a apoyarse encima:
 | El contraste medido en PHP coincide con el de Node hasta 1e-9, y los fondos siguen siendo los de los tokens | `tests/Feature/Color` | RF-CAT-003, RNF-ACC-001 |
 | La configuración rechaza claves libres, valores fuera de rango y no declara ningún secreto | `tests/Feature/Configuracion` | RF-CFG-001/002/003 |
 | Los mensajes de validación llegan traducidos, no como claves | `tests/Feature/Idioma` | Usabilidad del backoffice (ADR-023) |
+
+### Y lo que dejó G3
+
+| Verificación | Dónde | Sostiene |
+|---|---|---|
+| El recorte del IGN conserva su hash exacto | `tests/Feature/Geo/RecorteIgnTest.php` | El dataset congelado por versión |
+| Una sola entidad, y es el partido, no la localidad homónima | ídem | La identidad del dato |
+| SRID 4326 y ejes en `[longitud, latitud]` medidos por valor | ídem | RF-GEO-005, ADR-003 |
+| Validez topológica compuesta, sin `ST_IsValid` | ídem | ADR-010 |
+| La superficie es la de un partido, no la de su envolvente | ídem | Que no se haya sustituido el polígono por un rectángulo |
+| Centro, bbox y viewbox salen del polígono y no de memoria | ídem | El encuadre del mapa y el sesgo de geocodificación |
+| Las obras de prueba caen dentro del partido | ídem | Fixtures con coordenadas reales |
 
 **CA-002 queda en P**: la secuencia atómica está probada con dos transacciones
 concurrentes, pero su enunciado habla de dos altas de obra, y el alta llega en
