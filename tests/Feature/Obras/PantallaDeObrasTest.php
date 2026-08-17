@@ -285,6 +285,30 @@ it('no deja abrir una obra que está en la papelera', function () {
     $this->actingAs(usuarioDeObras())->get("/obras/{$obra->getKey()}/editar")->assertNotFound();
 });
 
+it('avisa que falta el catálogo en lugar de ofrecer un formulario inservible', function () {
+    // Una instalación recién migrada, antes de configurar nada. El formulario
+    // llegaba con los dos `<select>` vacíos y `required`: el navegador bloqueaba
+    // el envío por validación nativa y el botón Guardar no hacía NADA —sin
+    // mensaje, sin error, sin pista de qué faltaba—.
+    //
+    // Lo encontró el E2E en CI, que corre sobre una base sin sembrar. Le pasaría
+    // igual a quien instale el sistema y entre a cargar la primera obra.
+    $this->actingAs(usuarioDeObras())->get('/obras/nueva')
+        ->assertOk()
+        ->assertInertia(fn ($p) => $p
+            ->component('Obras/Formulario')
+            ->has('subcategorias', 0)
+            ->has('estados', 0));
+});
+
+it('ofrece el formulario completo en cuanto el catálogo existe', function () {
+    subcategoriaPunto();
+    estadoActivo();
+
+    $this->actingAs(usuarioDeObras())->get('/obras/nueva')
+        ->assertInertia(fn ($p) => $p->has('subcategorias', 1)->has('estados', 1));
+});
+
 it('no deja entrar a nadie sin sesión', function () {
     $this->get('/obras')->assertRedirect('/login');
     $this->post('/obras', formularioDeObra())->assertRedirect('/login');

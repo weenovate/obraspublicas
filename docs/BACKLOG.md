@@ -111,6 +111,7 @@ F1-B.
 | Las excepciones de dominio llegan como error de formulario, no como 500 | ídem | Usabilidad del backoffice |
 | Se dibuja punto, línea y polígono con el mouse, se deshace un vértice y se guarda | `tests/e2e/obras.spec.js` | **CA-003**, RF-GEO-001…005 |
 | El ciclo completo: dibujar, guardar, reabrir con la geometría dibujada, mandar a papelera | ídem | **CA-004** |
+| Con el catálogo vacío el formulario avisa qué falta, en vez de un botón que no hace nada | `tests/Feature/Obras/PantallaDeObrasTest.php`, `tests/e2e/obras.spec.js` | Usabilidad de una instalación nueva |
 
 **CA-002 y CA-003 se cierran acá.** CA-004, CA-008 y CA-009 también: la papelera
 lógica, la semántica de fechas y la concurrencia están verificadas de punta a punta.

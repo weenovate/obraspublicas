@@ -75,6 +75,27 @@ watch(finaliza, (finalizaAhora) => {
 
 const errores = computed(() => Object.values(form.errors))
 
+/*
+| Sin catálogo no se puede cargar una obra, y hay que DECIRLO.
+|
+| Esto lo encontró el E2E en una instalación recién migrada: los `<select>` de
+| subcategoría y estado quedaban vacíos, `required` bloqueaba el envío por
+| validación nativa del navegador y el botón Guardar no hacía absolutamente nada
+| —sin mensaje, sin error, sin pista—. Es el peor comportamiento posible: parece
+| que la aplicación está rota.
+|
+| Le pasaría a cualquiera que instale el sistema y entre a cargar la primera obra
+| antes de configurar los catálogos.
+*/
+const faltaCatalogo = computed(() => {
+    const faltantes = []
+
+    if (props.subcategorias.length === 0) faltantes.push('subcategorías')
+    if (props.estados.length === 0) faltantes.push('estados de obra')
+
+    return faltantes
+})
+
 function guardar () {
     if (editando.value) {
         form.put(`/obras/${props.obra.id}`, { preserveScroll: true })
@@ -94,6 +115,17 @@ function enviarAPapelera () {
             <h1>{{ editando ? `Obra ${obra.code}` : 'Nueva obra' }}</h1>
             <Link href="/obras">Volver al listado</Link>
         </div>
+
+        <RmlAlert
+            v-if="faltaCatalogo.length"
+            tone="warning"
+            style="margin-top: var(--rml-space-5)"
+            data-testid="falta-catalogo"
+        >
+            No se puede cargar una obra todavía: falta configurar
+            {{ faltaCatalogo.join(' y ') }}. Un Administrador tiene que crearlos antes,
+            desde la sección de catálogos.
+        </RmlAlert>
 
         <RmlAlert v-if="errores.length" tone="error" style="margin-top: var(--rml-space-5)" data-testid="errores">
             <ul style="margin: 0; padding-left: var(--rml-space-5)">
@@ -203,7 +235,12 @@ function enviarAPapelera () {
 
             <div class="flex items-center justify-between flex-wrap gap-3" style="margin-top: var(--rml-space-5)">
                 <div class="flex items-center gap-3">
-                    <RmlButton type="submit" :loading="form.processing" data-testid="guardar-obra">
+                    <RmlButton
+                        type="submit"
+                        :loading="form.processing"
+                        :disabled="faltaCatalogo.length > 0"
+                        data-testid="guardar-obra"
+                    >
                         {{ editando ? 'Guardar cambios' : 'Crear obra' }}
                     </RmlButton>
                     <Link href="/obras"><RmlButton type="button" variant="secondary">Cancelar</RmlButton></Link>

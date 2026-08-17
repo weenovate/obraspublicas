@@ -52,6 +52,17 @@ async function asegurarSubcategoria (page, sufijo, modo) {
 
 /** Completa lo que no es geometría. Las fechas van en el formato del control. */
 async function completarDatos (page, nombre, { categoria, subcategoria }) {
+    // Precondición explícita, con el remedio adentro del mensaje. Sin esto, un
+    // entorno sin los estados base falla por el camino más confuso posible: el
+    // `<select>` queda vacío, `required` bloquea el envío sin decir nada y los
+    // 24 casos fallan con «se esperaba Obra OBR-…, se recibió Nueva obra», que
+    // no apunta ni de lejos a la causa. Pasó en CI, y costó un ciclo entero.
+    await expect(
+        page.getByTestId('falta-catalogo'),
+        'El entorno no tiene catálogo base. Sembralo con: '
+        + 'php artisan db:seed --class=CatalogoBaseSeeder'
+    ).toHaveCount(0)
+
     await page.getByLabel('Nombre').fill(nombre)
     // La opción se lee «Categoría · Subcategoría», que es como la arma el
     // formulario para distinguir dos subcategorías homónimas de rubros distintos.
