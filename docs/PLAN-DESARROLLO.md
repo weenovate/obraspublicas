@@ -13,16 +13,17 @@ razonamiento de cada decisión está en [`ARQUITECTURA.md`](ARQUITECTURA.md).
 | **G1** — Motor de producción confirmado | ✅ Cerrada. MariaDB 10.11.18, `SELECT VERSION()` registrado |
 | **G2** — PoC espacial y matriz | ✅ **Cerrada en verde**. P3, P4, P6, P7 y P9 bloqueantes, todas verdes |
 | **F0** — Fundaciones | ✅ **Completada** |
-| **G3** — Dataset del IGN recortado a Ramallo | ⛔ Pendiente. **Bloquea F1** |
+| **F1-A** — Datos, acceso y catálogos | ✅ **Completada** |
+| **G3** — Dataset del IGN recortado a Ramallo | ⛔ Pendiente. **Bloquea F1-B** |
 | **G4** — Especificación del kiosco | ⛔ Pendiente. Bloquea la aceptación de F5 |
 | **G5** — Autorización escrita del RDS | ⛔ Pendiente. Bloquea la habilitación de la URL pública |
-| **F1** a **F7** | No iniciadas |
+| **F1-B** a **F7** | No iniciadas |
 
 ---
 
 ## Compuertas pendientes
 
-### G3 — Capa de departamentos del IGN (bloquea F1)
+### G3 — Capa de departamentos del IGN (bloquea F1-B)
 
 Se necesita el archivo oficial recortado al partido de Ramallo, con: fecha de
 publicación, fecha de descarga, SRS de origen, transformación a EPSG:4326 y hash
@@ -67,13 +68,26 @@ tema oscuro construido y contraste medido · primitivos Vue · tooling (Pint,
 Larastan, Pest, Playwright) · CI con MariaDB 10.11.18 y auditorías bloqueantes ·
 seguridad base con login mínimo funcional y auditoría atómica · PoC espacial de G2.
 
-### F1 — Datos, acceso, catálogos y obras (26–30 días-dev) ⛔ bloqueada por G3
+### F1-A — Datos, acceso y catálogos ✅
 
-Las 11 migraciones restantes y seeders · autenticación completa con roles y
-políticas · catálogos con las reglas de modificación y desactivación · CRUD de
-obras con geometría manual · las dos columnas de fecha y `effective_end_date` ·
-generación de código `OBR-YYYY-XXXX` con secuencia atómica · concurrencia
-optimista · papelera lógica · componentes de aplicación del RDS.
+F1 se partió al planificarla, porque la mayor parte no depende de la geografía y
+esperar a G3 con todo el resto detenido no compraba nada.
+
+Nueve migraciones y seeders —doce de las trece tablas del spec— · autenticación
+completa con roles y políticas, con toda denegación auditada · CRUD de usuarios con
+contraseña temporal, último Admin protegido y sesiones revocables · los cinco
+catálogos con sus reglas de inmutabilidad · campos técnicos dinámicos ·
+configuración tipada · generador de código `OBR-YYYY-XXXX` con secuencia atómica ·
+pantallas del backoffice con los componentes de aplicación del RDS.
+
+`works` y `work_field_values` entraron **como esquema**: sin ellas, «está en uso»
+no se puede consultar y las reglas de catálogo no se pueden hacer cumplir.
+
+### F1-B — Obras con geometría (14–17 días-dev) ⛔ bloqueada por G3
+
+CRUD de obras con geometría manual · las tres columnas de fecha y
+`effective_end_date` materializada · concurrencia optimista · papelera lógica ·
+editores cartográficos. Todo lo que necesita coordenadas verificadas.
 
 ### F2 — Fotos y campos dinámicos (10–12)
 
@@ -100,7 +114,8 @@ los seis umbrales cuantitativos.
 ### F6 — Administración (13–15)
 
 Papelera completa y borrado definitivo por tipeo exacto · UI de auditoría con diff
-· configuración tipada · usuarios y revocación de sesiones.
+y filtros. La configuración tipada, los usuarios y la revocación de sesiones se
+adelantaron a F1-A.
 
 ### F7 — Calidad y producción (15–17)
 
@@ -115,7 +130,8 @@ cronometrada · despliegue · capacitación.
 | | Días-dev |
 |---|---|
 | F0 (completada) | 13–16 |
-| F1 | 26–30 |
+| F1-A (completada) | 12–14 |
+| F1-B | 14–17 |
 | F2 | 10–12 |
 | F3 | 13–15 |
 | F4 | 17–19 |
@@ -133,7 +149,7 @@ equipo de desarrollo:
 |---|---|---|
 | Dedicación | 5 días-dev por semana por desarrollador | Proporcional |
 | Respuesta de UAT | Observaciones en 5 días hábiles | Cada semana extra corre el calendario 1:1 |
-| Compuertas G3, G4, G5 | Insumos antes de necesitarlos | G3 bloquea F1; G5 bloquea la URL pública |
+| Compuertas G3, G4, G5 | Insumos antes de necesitarlos | G3 bloquea F1-B; G5 bloquea la URL pública |
 | Proveedores | Cuentas de teselas y ORS activas antes de F3 | F3 y F4 a media máquina |
 | Coordinación | ~15 % de sobrecarga | Proporcional |
 

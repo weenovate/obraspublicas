@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Models\AuthSession;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Auth\SessionRegistry;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,7 +40,10 @@ use Inertia\Response as InertiaResponse;
  */
 final class LoginController
 {
-    public function __construct(private readonly AuditRecorder $audit) {}
+    public function __construct(
+        private readonly AuditRecorder $audit,
+        private readonly SessionRegistry $sessions,
+    ) {}
 
     public function show(): InertiaResponse
     {
@@ -83,17 +88,29 @@ final class LoginController
         DB::transaction(function () use ($user, $request): void {
             $user->forceFill(['last_login_at' => now()])->save();
 
+            // La fila de sesión se crea DESPUÉS de regenerar el identificador:
+            // tiene que guardar el definitivo, no el que se descartó, o la
+            // revocación no encontraría la sesión que quiere cortar.
+            $session = $this->sessions->register($user, $request);
+
             $this->audit->registrar(
                 action: 'auth.login',
                 entityType: 'user',
                 entityId: $user->getKey(),
                 metadata: [
                     'session_id' => $request->session()->getId(),
+                    'auth_session_id' => $session->getKey(),
                     'must_change_password' => $user->must_change_password,
                 ],
                 actor: $user,
             );
         });
+
+        // Con contraseña temporal no hay adónde ir: hay que cambiarla primero
+        // (RF-AUT-004), y el middleware lo impone igual si alguien navega a mano.
+        if ($user->must_change_password) {
+            return redirect()->route('perfil.password');
+        }
 
         return redirect()->intended('/admin');
     }
@@ -104,6 +121,21 @@ final class LoginController
 
         // Cerrar sesión también es una operación exitosa: camino transaccional.
         DB::transaction(function () use ($user, $request): void {
+            // Revocar la fila es lo que hace efectivo el cierre para el resto del
+            // sistema: sin esto, la sesión seguiría figurando como viva en la
+            // pantalla de administración.
+            if ($user !== null) {
+                AuthSession::query()
+                    ->where('user_id', $user->getKey())
+                    ->where('session_id', $request->session()->getId())
+                    ->whereNull('revoked_at')
+                    ->update([
+                        'revoked_at' => now(),
+                        'revoked_reason' => AuthSession::REASON_LOGOUT,
+                        'updated_at' => now(),
+                    ]);
+            }
+
             $this->audit->registrar(
                 action: 'auth.logout',
                 entityType: 'user',

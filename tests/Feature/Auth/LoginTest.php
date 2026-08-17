@@ -21,7 +21,7 @@ function usuarioActivo(array $overrides = []): User
         'role' => User::ROLE_ADMIN,
         'is_active' => true,
         'must_change_password' => false,
-        'theme_preference' => 'system',
+        'theme_preference' => null,
     ], $overrides));
 }
 

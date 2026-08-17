@@ -31,7 +31,7 @@ function unUsuario(): User
         'role' => User::ROLE_OBRAS_PUBLICAS,
         'is_active' => true,
         'must_change_password' => false,
-        'theme_preference' => 'system',
+        'theme_preference' => null,
     ]);
 }
 

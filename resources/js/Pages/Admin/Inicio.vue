@@ -1,40 +1,43 @@
 <script setup>
 /**
- * Marcador del backoffice. F1 lo reemplaza por el listado de obras con sus
- * filtros, paginación y acciones.
+ * Inicio del backoffice.
+ *
+ * Usa el mismo marco que el resto: cuando tenía su propio encabezado, era la
+ * única pantalla sin navegación, y justo es a la que se llega al ingresar. El
+ * listado de obras con sus filtros y acciones la reemplaza en F1-B.
  */
-import { router, usePage } from '@inertiajs/vue3'
 import { computed } from 'vue'
+import { usePage } from '@inertiajs/vue3'
+import AdminLayout from '../../Layouts/AdminLayout.vue'
 import RmlCard from '../../Components/rds/RmlCard.vue'
-import RmlButton from '../../Components/rds/RmlButton.vue'
 import RmlBadge from '../../Components/rds/RmlBadge.vue'
 
 const page = usePage()
 const user = computed(() => page.props.auth?.user ?? null)
-
-function logout () {
-    router.post('/logout')
-}
+const esAdmin = computed(() => user.value?.role === 'ADMIN')
 </script>
 
 <template>
-    <main class="rml-container" style="padding-block: var(--rml-space-7)">
-        <div class="flex items-center justify-between flex-wrap gap-3">
-            <h1>Obras Públicas</h1>
-            <RmlButton variant="secondary" @click="logout">Cerrar sesión</RmlButton>
-        </div>
+    <AdminLayout>
+        <h1>Inicio</h1>
 
-        <RmlCard title="Sesión iniciada" style="margin-top: var(--rml-space-6)">
+        <RmlCard title="Sesión iniciada" style="margin-top: var(--rml-space-5)">
             <p>
                 {{ user?.name }} ·
-                <RmlBadge :tone="user?.role === 'ADMIN' ? 'info' : 'neutral'">
-                    {{ user?.role === 'ADMIN' ? 'Administrador' : 'Obras Públicas' }}
+                <RmlBadge :tone="esAdmin ? 'info' : 'neutral'">
+                    {{ esAdmin ? 'Administrador' : 'Obras Públicas' }}
                 </RmlBadge>
             </p>
             <p class="text-muted" style="margin-top: var(--rml-space-3)">
-                El listado de obras, los catálogos y la carga cartográfica llegan en F1,
-                una vez cerradas las compuertas G2 y G3.
+                El listado de obras y la carga cartográfica llegan en F1-B, una vez cerrada la compuerta G3.
             </p>
         </RmlCard>
-    </main>
+
+        <RmlCard v-if="esAdmin" title="Administración" style="margin-top: var(--rml-space-5)">
+            <p class="text-secondary">
+                Usuarios y sesiones, los cinco catálogos, los campos técnicos y la configuración del sistema
+                están disponibles desde el menú.
+            </p>
+        </RmlCard>
+    </AdminLayout>
 </template>

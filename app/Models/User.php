@@ -6,7 +6,9 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Carbon;
 
 /**
  * Usuario interno. Dos roles, sin jerarquía intermedia (spec 4).
@@ -17,7 +19,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string $role
  * @property bool $is_active
  * @property bool $must_change_password
- * @property string $theme_preference
+ * @property string|null $theme_preference `null` = no eligió; manda el predeterminado
+ * @property Carbon|null $last_login_at
+ * @property Carbon|null $password_changed_at
  */
 class User extends Authenticatable
 {
@@ -60,6 +64,12 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password_changed_at' => 'datetime',
         ];
+    }
+
+    /** @return HasMany<AuthSession, $this> */
+    public function authSessions(): HasMany
+    {
+        return $this->hasMany(AuthSession::class);
     }
 
     public function isAdmin(): bool
