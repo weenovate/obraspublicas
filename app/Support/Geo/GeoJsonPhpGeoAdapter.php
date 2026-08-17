@@ -56,13 +56,13 @@ final class GeoJsonPhpGeoAdapter
     /**
      * Construye una polilínea de phpgeo desde coordenadas GeoJSON [[lon, lat], ...].
      *
-     * @param  list<array{0: float|int, 1: float|int}>  $lonLatPairs
+     * @param  list<array{0?: float|int, 1?: float|int}>  $lonLatPairs
      */
     public function polylineFromGeoJsonCoordinates(array $lonLatPairs): Polyline
     {
         if (count($lonLatPairs) < 2) {
             throw new InvalidArgumentException(
-                'Una línea requiere al menos dos vértices; se recibieron '.count($lonLatPairs).'.'
+                'Una línea requiere al menos dos vértices; se recibieron '.count($lonLatPairs).'.',
             );
         }
 
@@ -71,7 +71,7 @@ final class GeoJsonPhpGeoAdapter
         foreach ($lonLatPairs as $index => $pair) {
             if (! isset($pair[0], $pair[1])) {
                 throw new InvalidArgumentException(
-                    "El vértice en la posición {$index} no es un par [lon, lat]."
+                    "El vértice en la posición {$index} no es un par [lon, lat].",
                 );
             }
 
@@ -90,7 +90,7 @@ final class GeoJsonPhpGeoAdapter
     {
         return array_map(
             fn (Coordinate $point): array => $this->toLonLatPair($point),
-            $polyline->getPoints()
+            $polyline->getPoints(),
         );
     }
 
@@ -103,13 +103,13 @@ final class GeoJsonPhpGeoAdapter
     {
         if ($lon < -180.0 || $lon > 180.0) {
             throw new InvalidArgumentException(
-                "La longitud {$lon} está fuera del rango [-180, 180]. ¿Se pasaron los ejes invertidos?"
+                "La longitud {$lon} está fuera del rango [-180, 180]. ¿Se pasaron los ejes invertidos?",
             );
         }
 
         if ($lat < -90.0 || $lat > 90.0) {
             throw new InvalidArgumentException(
-                "La latitud {$lat} está fuera del rango [-90, 90]. ¿Se pasaron los ejes invertidos?"
+                "La latitud {$lat} está fuera del rango [-90, 90]. ¿Se pasaron los ejes invertidos?",
             );
         }
     }

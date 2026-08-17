@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\User;
 
 return [
@@ -91,6 +93,22 @@ return [
     | quickly generating a very large amount of password reset tokens.
     |
     */
+
+    /*
+    |---------------------------------------------------------------------------
+    | Límite de tasa del login (RNF-SEC-004)
+    |---------------------------------------------------------------------------
+    |
+    | Dos ventanas: por minuto frena el ataque rápido, por hora el lento, que es
+    | el que suele pasar inadvertido. La clave es compuesta por correo + IP, y
+    | todo rechazo se audita por el camino no transaccional.
+    |
+    */
+
+    'login_throttle' => [
+        'per_minute' => (int) env('LOGIN_THROTTLE_PER_MINUTE', 5),
+        'per_hour' => (int) env('LOGIN_THROTTLE_PER_HOUR', 20),
+    ],
 
     'passwords' => [
         'users' => [
