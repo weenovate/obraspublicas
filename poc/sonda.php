@@ -46,7 +46,7 @@ try {
             // EXPLAIN devuelve varias filas y las sondas leen sólo la primera;
             // sin buffer, la consulta siguiente falla con «unbuffered queries».
             PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
-        ]
+        ],
     );
 } catch (PDOException $e) {
     fwrite(STDERR, "No se pudo conectar a MariaDB en {$host}:{$port}: {$e->getMessage()}\n");
@@ -63,6 +63,10 @@ $results = [];
 /** @var array<string, bool> */
 $gateStatus = [];
 
+/**
+ * @param  list<mixed>  $bindings
+ * @return array{ok: bool, value: mixed, error: string|null}
+ */
 function scalar(PDO $pdo, string $sql, array $bindings = []): array
 {
     try {
@@ -79,6 +83,9 @@ function scalar(PDO $pdo, string $sql, array $bindings = []): array
     }
 }
 
+/**
+ * @return array{ok: bool, value: string|null, error: string|null}
+ */
 function exec_ddl(PDO $pdo, string $sql): array
 {
     try {
@@ -172,7 +179,7 @@ record(
     'P1',
     "Coincide con producción ({$expected})",
     $versionOk ? 'OK' : 'FAIL',
-    $versionOk ? 'Sí' : 'No — la matriz no es válida para producción'
+    $versionOk ? 'Sí' : 'No — la matriz no es válida para producción',
 );
 $gateStatus['P1'] = $versionOk;
 say('P1  versión: '.fmt($version['value']).'  '.($versionOk ? '[OK]' : '[FAIL]'));
@@ -211,7 +218,7 @@ if ($p2c['ok']) {
             ? 'Insertar SRID 0 falla: `'.$insertWrongSrid['error'].'` — y SRID 4326 entra.'
             : ($insertWrongSrid['ok']
                 ? 'Insertar SRID 0 en una columna declarada 4326 **se acepta en silencio**: el atributo no es una guarda utilizable.'
-                : 'Resultado ambiguo: también falló el SRID correcto — '.$insertRightSrid['error'])
+                : 'Resultado ambiguo: también falló el SRID correcto — '.$insertRightSrid['error']),
     );
 }
 
@@ -377,7 +384,6 @@ $topoFixtures = [
     'Polígono que se toca en un vértice' => [POLY_TOUCH_VERTEX, 'debe rechazarse'],
 ];
 
-$p6AllProbed = true;
 foreach ($topoFixtures as $label => [$wkt, $expectation]) {
     $parse = scalar($pdo, 'SELECT ST_AsText(ST_GeomFromText(?, 4326))', [$wkt]);
 
@@ -402,7 +408,7 @@ foreach ($topoFixtures as $label => [$wkt, $expectation]) {
         $area['ok'] ? fmt($area['value']) : 'n/a',
         $numPoints['ok'] ? fmt($numPoints['value']) : 'n/a',
         $rings['ok'] ? fmt($rings['value']) : 'n/a',
-        $expectation
+        $expectation,
     );
 
     record('P6', $label, 'PARSEA', $detail);
@@ -432,10 +438,10 @@ record(
     '`ST_IsSimple` discrimina moño de línea simple',
     $isSimpleDiscriminates ? 'OK' : 'FAIL',
     'simple='.fmt($simpleGood['value']).' · moño='.fmt($simpleBowtie['value']).
-    ($isSimpleDiscriminates ? '' : ' — **hallazgo bloqueante**: sin este discriminante, RF-GEO-013 necesita detector propio o php-geos')
+    ($isSimpleDiscriminates ? '' : ' — **hallazgo bloqueante**: sin este discriminante, RF-GEO-013 necesita detector propio o php-geos'),
 );
 
-$gateStatus['P6'] = $holeRulesOk && $isSimpleDiscriminates && $p6AllProbed;
+$gateStatus['P6'] = $holeRulesOk && $isSimpleDiscriminates;
 say('P6  topología: '.($gateStatus['P6'] ? '[OK]' : '[FAIL]').' · ST_IsSimple discrimina: '.($isSimpleDiscriminates ? 'sí' : 'NO'));
 
 // ---------------------------------------------------------------------------
@@ -473,7 +479,7 @@ foreach ($p7Cases as $label => $wkt) {
     $contains = scalar(
         $pdo,
         'SELECT ST_Contains(ST_GeomFromText(?, 4326), ST_PointOnSurface(ST_GeomFromText(?, 4326)))',
-        [$wkt, $wkt]
+        [$wkt, $wkt],
     );
     $isPoint = scalar($pdo, 'SELECT ST_GeometryType(ST_PointOnSurface(ST_GeomFromText(?, 4326)))', [$wkt]);
 
@@ -487,7 +493,7 @@ foreach ($p7Cases as $label => $wkt) {
     $centroidInside = scalar(
         $pdo,
         'SELECT ST_Contains(ST_GeomFromText(?, 4326), ST_Centroid(ST_GeomFromText(?, 4326)))',
-        [$wkt, $wkt]
+        [$wkt, $wkt],
     );
     if ($centroidInside['ok'] && (int) $centroidInside['value'] === 1) {
         $centroidInsideCount++;
@@ -499,7 +505,7 @@ foreach ($p7Cases as $label => $wkt) {
         $typeOk ? 'sí' : 'no',
         $inside ? 'sí' : 'NO',
         $centroidInside['ok'] ? ((int) $centroidInside['value'] === 1 ? 'sí' : 'no') : 'n/a',
-        $elapsedMs
+        $elapsedMs,
     ));
 }
 
@@ -511,7 +517,7 @@ record(
         ? '**Escalón 1**: `ST_PointOnSurface` pasa la batería completa. Menos código propio, menos superficie de error.'
         : ($posAvailable
             ? '`ST_PointOnSurface` existe pero falla algún caso: se baja al escalón 2/3 según el detalle de arriba.'
-            : '`ST_PointOnSurface` no está disponible: se aplica la escalera 2→3→4 del plan.')
+            : '`ST_PointOnSurface` no está disponible: se aplica la escalera 2→3→4 del plan.'),
 );
 record('P7', 'Centroide contenido (atajo del escalón 2)', 'INFO', $centroidInsideCount.' de '.count($p7Cases).' casos');
 
@@ -535,7 +541,7 @@ foreach ($eqCases as [$lonA, $lonB]) {
     $expected = GeodesicOracle::equatorArcMeters($lonA, $lonB);
     $actual = $vincenty->getDistance(
         $adapter->coordinateFromLonLat($lonA, 0.0),
-        $adapter->coordinateFromLonLat($lonB, 0.0)
+        $adapter->coordinateFromLonLat($lonB, 0.0),
     );
     $delta = abs($actual - $expected);
     $ok = $delta <= $algorithmicTolerance;
@@ -544,7 +550,7 @@ foreach ($eqCases as [$lonA, $lonB]) {
         'oráculo=%.6f m · Vincenty=%.6f m · Δ=%.6f mm',
         $expected,
         $actual,
-        $delta * 1000
+        $delta * 1000,
     ));
 }
 
@@ -554,7 +560,7 @@ foreach ($merCases as [$latA, $latB]) {
     $expected = GeodesicOracle::meridianArcMeters($latA, $latB);
     $actual = $vincenty->getDistance(
         $adapter->coordinateFromLonLat(-60.123456, $latA),
-        $adapter->coordinateFromLonLat(-60.123456, $latB)
+        $adapter->coordinateFromLonLat(-60.123456, $latB),
     );
     $delta = abs($actual - $expected);
     $ok = $delta <= $algorithmicTolerance;
@@ -563,7 +569,7 @@ foreach ($merCases as [$latA, $latB]) {
         'oráculo=%.6f m · Vincenty=%.6f m · Δ=%.6f mm',
         $expected,
         $actual,
-        $delta * 1000
+        $delta * 1000,
     ));
 }
 
@@ -584,20 +590,20 @@ record('P8', 'Línea oblicua vs. esfera de radio medio (control grueso)', $obliq
     'Vincenty=%.3f m · esfera=%.3f m · desvío relativo=%.4f %%',
     $obliqueVincenty,
     $obliqueSphere,
-    $obliqueRatio * 100
+    $obliqueRatio * 100,
 ));
 
 // (e) Detección de ejes invertidos: si se invierten, la distancia cambia groseramente.
 $swapped = $vincenty->getDistance(
     $adapter->coordinateFromLonLat(-33.50, -60.20),
-    $adapter->coordinateFromLonLat(-33.40, -60.10)
+    $adapter->coordinateFromLonLat(-33.40, -60.10),
 );
 $swapDetectable = abs($swapped - $obliqueVincenty) > 1.0;
 record('P8', 'Los fixtures asimétricos detectan ejes invertidos', $swapDetectable ? 'OK' : 'FAIL', sprintf(
     'correcto=%.3f m · invertido=%.3f m · diferencia=%.3f m',
     $obliqueVincenty,
     $swapped,
-    abs($swapped - $obliqueVincenty)
+    abs($swapped - $obliqueVincenty),
 ));
 $p8Ok = $p8Ok && $swapDetectable;
 
@@ -612,7 +618,7 @@ record('P8', '`ST_Length` sobre lon/lat (MariaDB)', 'INFO', sprintf(
     'Devuelve `%s` — son **grados**, no metros. Vincenty sobre la misma línea: %.2f m. Cociente m/grado ≈ %.0f.',
     fmt($stLength['value']),
     $phpLength['meters'],
-    $ratio
+    $ratio,
 ));
 record('P8', 'Veredicto: `ST_Length` prohibida en el dominio', 'OK', 'Confirmado con números: el motor no es fuente de verdad de una longitud en metros. Test de arquitectura falla el build si aparece.');
 
@@ -622,7 +628,7 @@ record('P8', 'Fallback ante no convergencia (casi antipodal)', 'INFO', sprintf(
     'método=%s · segmentos con fallback=%d · %.2f m',
     $antipodal['method'],
     $antipodal['fallback_segments'],
-    $antipodal['meters']
+    $antipodal['meters'],
 ));
 
 // (h) Conformidad funcional: length_m redondeado al centímetro.
@@ -639,7 +645,7 @@ record('P8', 'Conformidad funcional de `length_m` (max(0,10 m; 0,05 %))', $funcO
     $refMeridian,
     $funcDelta,
     $funcTolerance,
-    $functional['method']
+    $functional['method'],
 ));
 
 record('P8', 'Oráculo utilizado', 'INFO', 'Analítico: ecuador en forma cerrada (a·Δλ) y meridiano por cuadratura de Simpson compuesta. **Desviación documentada** respecto de los vectores de Vincenty (1975): ver la nota de esta sección.');
@@ -678,7 +684,7 @@ for ($i = 0; $i < $rows; $i++) {
     } else {
         $wkt = sprintf(
             'POLYGON((%.6f %.6f, %.6f %.6f, %.6f %.6f, %.6f %.6f, %.6f %.6f))',
-            $lo, $la, $lo + 0.003, $la, $lo + 0.003, $la + 0.003, $lo, $la + 0.003, $lo, $la
+            $lo, $la, $lo + 0.003, $la, $lo + 0.003, $la + 0.003, $lo, $la + 0.003, $lo, $la,
         );
         $rep = sprintf('POINT(%.6f %.6f)', $lo + 0.0015, $la + 0.0015);
     }
@@ -733,7 +739,7 @@ foreach ($explainCases as $label => $sql) {
             $type,
             $planRows,
             $count,
-            $ms
+            $ms,
         ));
     } catch (PDOException $e) {
         record('P9', $label, 'ERROR', normalizeError($e->getMessage()));
@@ -758,7 +764,7 @@ record('P9', 'Consultar `representative_point` en modo geometría pierde entidad
     fmt($byRep['value']),
     $edgeProven
         ? 'Confirma la corrección 3 de la enmienda v2.3.1: en modo geometría hay que preguntar por `geometry`.'
-        : 'No se pudo reproducir el caso; revisar el fixture.'
+        : 'No se pudo reproducir el caso; revisar el fixture.',
 ));
 
 // ¿`MBRIntersects` sobre-devuelve respecto de `ST_Intersects`? Importa para el
@@ -783,7 +789,7 @@ record('P9', '`MBRIntersects` vs `ST_Intersects` en la esquina del envolvente', 
     fmt($exactHit['value']),
     $overReturns
         ? '`MBRIntersects` **sobre-devuelve**, como corresponde a un filtro de envolvente. Es aceptable en consultas por viewport —dibuja algo apenas fuera de cuadro— y el tope de entidades acota el peso. Si alguna vez hace falta exactitud, se refina con `ST_Intersects` sobre el conjunto ya reducido por el índice.'
-        : 'No se observó sobre-devolución en este fixture: los dos predicados coinciden.'
+        : 'No se observó sobre-devolución en este fixture: los dos predicados coinciden.',
 ));
 record('P9', '`ST_Intersects` también usa el índice espacial', 'INFO', 'Medido en las cuatro formas de arriba: en 10.11.18 `ST_Intersects` resuelve por `range` sobre el R-tree, así que el temor del plan a un recorrido completo **no se confirma**. Se conserva `MBRIntersects` por ser el filtro más barato y explícito, con las aserciones de `EXPLAIN` en la suite.');
 
@@ -804,7 +810,7 @@ record('P10', 'Predicado con SRID 0 y 4326 mezclados', $mixed['ok'] ? 'ACEPTADO 
     ? 'Devuelve `'.fmt($mixed['value']).'` sin error. **El motor no protege**: la validación de SRID es responsabilidad de la aplicación.'
     : $mixed['error']);
 record('P10', 'Predicado con SRID coincidente', $sameSrid['ok'] ? 'OK' : 'FAIL', 'Devuelve `'.fmt($sameSrid['value']).'`');
-record('P10', 'SRID por valor, no por columna', 'INFO', "`ST_SRID(ST_GeomFromText(..., 0))` = `".fmt($srid0['value'])."` — MariaDB guarda el SRID en el valor.");
+record('P10', 'SRID por valor, no por columna', 'INFO', '`ST_SRID(ST_GeomFromText(..., 0))` = `'.fmt($srid0['value']).'` — MariaDB guarda el SRID en el valor.');
 record('P10', 'Consecuencia', 'INFO', 'Toda escritura impone 4326 por binding y se verifica con `ST_SRID` antes de persistir.');
 $gateStatus['P10'] = true;
 say('P10 mezcla de SRID: '.($mixed['ok'] ? 'aceptada en silencio (validar en aplicación)' : 'rechazada por el motor'));
@@ -841,7 +847,7 @@ foreach ($gateStatus as $probe => $ok) {
         '| %s | %s%s |',
         $probe,
         $ok ? '✅ verde' : '❌ rojo',
-        $isGating ? ' (bloqueante)' : ''
+        $isGating ? ' (bloqueante)' : '',
     );
 }
 $md[] = '';
@@ -900,7 +906,7 @@ foreach ($titles as $probe => $title) {
             '| %s | %s | %s |',
             str_replace('|', '\\|', $row['item']),
             $row['status'],
-            str_replace('|', '\\|', $row['detail'])
+            str_replace('|', '\\|', $row['detail']),
         );
     }
     $md[] = '';

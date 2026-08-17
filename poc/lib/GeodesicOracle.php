@@ -54,7 +54,7 @@ final class GeodesicOracle
     public static function equatorArcMeters(
         float $lonFrom,
         float $lonTo,
-        float $a = self::WGS84_A
+        float $a = self::WGS84_A,
     ): float {
         $deltaLon = abs($lonTo - $lonFrom);
 
@@ -78,7 +78,7 @@ final class GeodesicOracle
         float $latTo,
         float $a = self::WGS84_A,
         float $invF = self::WGS84_INV_F,
-        int $intervals = 200000
+        int $intervals = 200000,
     ): float {
         if ($intervals % 2 !== 0) {
             $intervals++; // Simpson requiere un número par de subintervalos.
@@ -125,7 +125,7 @@ final class GeodesicOracle
         float $lonTo,
         float $latTo,
         float $a = self::WGS84_A,
-        float $invF = self::WGS84_INV_F
+        float $invF = self::WGS84_INV_F,
     ): float {
         $f = 1.0 / $invF;
         $b = $a * (1.0 - $f);
