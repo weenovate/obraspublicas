@@ -124,14 +124,14 @@ latitudes candidatas. El invariante no negociable, cualquiera sea el escalón, e
 
 | Ítem | Resultado | Detalle |
 |---|---|---|
-| Convexo simple | OK | `POINT(-60.150000000000006 -33.45)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.34 ms |
-| Cóncavo en U (centroide fuera) | OK | `POINT(-60.150000000000006 -33.489999999999995)` · POINT=sí · ST_Contains=sí · centroide dentro=no · 0.44 ms |
-| Cóncavo en L (centroide fuera) | OK | `POINT(-60.150000000000006 -33.485)` · POINT=sí · ST_Contains=sí · centroide dentro=no · 0.22 ms |
-| Con hueco centrado (centroide en el hueco) | OK | `POINT(-60.150000000000006 -33.489999999999995)` · POINT=sí · ST_Contains=sí · centroide dentro=no · 0.22 ms |
-| Con varios huecos | OK | `POINT(-60.150000000000006 -33.489999999999995)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.21 ms |
+| Convexo simple | OK | `POINT(-60.150000000000006 -33.45)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.38 ms |
+| Cóncavo en U (centroide fuera) | OK | `POINT(-60.150000000000006 -33.489999999999995)` · POINT=sí · ST_Contains=sí · centroide dentro=no · 0.27 ms |
+| Cóncavo en L (centroide fuera) | OK | `POINT(-60.150000000000006 -33.485)` · POINT=sí · ST_Contains=sí · centroide dentro=no · 0.25 ms |
+| Con hueco centrado (centroide en el hueco) | OK | `POINT(-60.150000000000006 -33.489999999999995)` · POINT=sí · ST_Contains=sí · centroide dentro=no · 0.44 ms |
+| Con varios huecos | OK | `POINT(-60.150000000000006 -33.489999999999995)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.26 ms |
 | Hueco que deja una franja delgada | OK | `POINT(-60.150000000000006 -33.4995)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.29 ms |
-| Muy alargado | OK | `POINT(-60.2 -33.5)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.26 ms |
-| Vértices casi colineales | OK | `POINT(-60.18749975 -33.4999995)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.21 ms |
+| Muy alargado | OK | `POINT(-60.2 -33.5)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.31 ms |
+| Vértices casi colineales | OK | `POINT(-60.18749975 -33.4999995)` · POINT=sí · ST_Contains=sí · centroide dentro=sí · 0.24 ms |
 | Escalón elegido de la escalera de preferencia | OK | **Escalón 1**: `ST_PointOnSurface` pasa la batería completa. Menos código propio, menos superficie de error. |
 | Centroide contenido (atajo del escalón 2) | INFO | 5 de 8 casos |
 
@@ -170,10 +170,10 @@ latitudes candidatas. El invariante no negociable, cualquiera sea el escalón, e
 
 | Ítem | Resultado | Detalle |
 |---|---|---|
-| Clustering · `MBRIntersects(representative_point, bbox)` | USA ÍNDICE | key=`idx_representative_point` · type=range · rows=111 · filas devueltas=126 · 1.24 ms |
-| Clustering · `ST_Intersects(representative_point, bbox)` | USA ÍNDICE | key=`idx_representative_point` · type=range · rows=111 · filas devueltas=126 · 0.85 ms |
-| Geometría · `MBRIntersects(geometry, bbox)` | USA ÍNDICE | key=`idx_geometry` · type=range · rows=111 · filas devueltas=150 · 0.98 ms |
-| Geometría · `ST_Intersects(geometry, bbox)` | USA ÍNDICE | key=`idx_geometry` · type=range · rows=111 · filas devueltas=150 · 1.11 ms |
+| Clustering · `MBRIntersects(representative_point, bbox)` | USA ÍNDICE | key=`idx_representative_point` · type=range · rows=111 · filas devueltas=126 · 0.84 ms |
+| Clustering · `ST_Intersects(representative_point, bbox)` | USA ÍNDICE | key=`idx_representative_point` · type=range · rows=111 · filas devueltas=126 · 0.83 ms |
+| Geometría · `MBRIntersects(geometry, bbox)` | USA ÍNDICE | key=`idx_geometry` · type=range · rows=111 · filas devueltas=150 · 0.43 ms |
+| Geometría · `ST_Intersects(geometry, bbox)` | USA ÍNDICE | key=`idx_geometry` · type=range · rows=111 · filas devueltas=150 · 0.59 ms |
 | Consultar `representative_point` en modo geometría pierde entidades | OK | La línea cruza el bbox: por `geometry` devuelve 1 fila(s); por `representative_point`, 0. Confirma la corrección 3 de la enmienda v2.3.1: en modo geometría hay que preguntar por `geometry`. |
 | `MBRIntersects` vs `ST_Intersects` en la esquina del envolvente | INFO | Triángulo cuyo envolvente cubre la esquina del bbox pero cuya superficie no: MBR devuelve 1, exacto devuelve 0. `MBRIntersects` **sobre-devuelve**, como corresponde a un filtro de envolvente. Es aceptable en consultas por viewport —dibuja algo apenas fuera de cuadro— y el tope de entidades acota el peso. Si alguna vez hace falta exactitud, se refina con `ST_Intersects` sobre el conjunto ya reducido por el índice. |
 | `ST_Intersects` también usa el índice espacial | INFO | Medido en las cuatro formas de arriba: en 10.11.18 `ST_Intersects` resuelve por `range` sobre el R-tree, así que el temor del plan a un recorrido completo **no se confirma**. Se conserva `MBRIntersects` por ser el filtro más barato y explícito, con las aserciones de `EXPLAIN` en la suite. |
