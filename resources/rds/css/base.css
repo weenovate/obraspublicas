@@ -1,0 +1,40 @@
+/* ============================================================
+   Ramallo Design System · Base / reset
+   Reglas de base sobre elementos nativos. Requiere los tokens.
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--rml-font-body);
+  font-size: var(--rml-text-body);
+  line-height: var(--rml-text-body-lh);
+  color: var(--rml-text-body);
+  background: var(--rml-surface-page);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--rml-font-display);
+  color: var(--rml-text-strong);
+  letter-spacing: var(--rml-tracking-tight);
+  margin: 0;
+}
+
+p { margin: 0; }
+
+a { color: var(--rml-text-link); }
+a:hover { color: var(--rml-text-link-hover); }
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--rml-focus-ring);
+  border-radius: var(--rml-radius-sm);
+}
+
+img { max-width: 100%; height: auto; }
+
+/* Íconos (ej. lucide) escalados al tamaño de fuente del contenedor. */
+svg.lucide { width: 1em; height: 1em; }

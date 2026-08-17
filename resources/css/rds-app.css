@@ -1,0 +1,357 @@
+/* ============================================================
+   EXTENSIÓN del RDS — componentes de aplicación
+   ------------------------------------------------------------
+   El RDS cubre el vocabulario de un sitio institucional: botones, tarjetas,
+   badges, campos, alertas, tablas, pestañas, acordeón, migas, buscador, grillas.
+   No cubre el de una aplicación de gestión con mapa. Estos componentes se
+   construyen con tokens `--rml-*` y se documentan como extensión.
+
+   Lo que entra en F0 es la base sobre la que se apoyan las fases siguientes; el
+   resto se agrega en su fase, con la misma disciplina de tokens.
+   ============================================================ */
+
+/* ---- Tokens propios de estos componentes -------------------------------
+   El velo del modal es el único color que estos componentes necesitan y que el
+   paquete no define. Se declara como token, en los tres estados de tema, para
+   que ningún componente use un color literal. */
+
+:root {
+  --rml-scrim: rgba(22, 26, 20, 0.55);
+}
+
+:root[data-theme='dark'] {
+  --rml-scrim: rgba(0, 0, 0, 0.72);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --rml-scrim: rgba(0, 0, 0, 0.72);
+  }
+}
+
+/* ---- Modal (RF-DEL-004: tipeo exacto para el borrado definitivo) --------- */
+
+.rml-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--rml-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--rml-space-4, 1rem);
+  z-index: 1000;
+}
+
+.rml-modal {
+  background: var(--rml-surface-card);
+  color: var(--rml-text-body);
+  border: 1px solid var(--rml-border-subtle);
+  border-radius: var(--rml-radius-lg, 12px);
+  box-shadow: var(--rml-shadow-xl);
+  width: 100%;
+  max-width: 32rem;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+.rml-modal-header {
+  padding: var(--rml-space-5, 1.25rem);
+  border-bottom: 1px solid var(--rml-border-subtle);
+}
+
+.rml-modal-body {
+  padding: var(--rml-space-5, 1.25rem);
+}
+
+.rml-modal-footer {
+  padding: var(--rml-space-5, 1.25rem);
+  border-top: 1px solid var(--rml-border-subtle);
+  display: flex;
+  gap: var(--rml-space-3, 0.75rem);
+  justify-content: flex-end;
+}
+
+/* ---- Paginación (25/50/100) --------------------------------------------- */
+
+.rml-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--rml-space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.rml-page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 var(--rml-space-2, 0.5rem);
+  border: 1px solid var(--rml-border);
+  border-radius: var(--rml-radius-sm, 4px);
+  background: var(--rml-surface-card);
+  color: var(--rml-text-body);
+  text-decoration: none;
+}
+
+.rml-page-link:hover {
+  background: var(--rml-surface-sunken);
+}
+
+.rml-page-link[aria-current='page'] {
+  background: var(--rml-action);
+  border-color: var(--rml-action);
+  color: var(--rml-text-on-brand);
+}
+
+.rml-page-link[aria-disabled='true'] {
+  color: var(--rml-text-disabled);
+  pointer-events: none;
+}
+
+/* ---- Encabezados ordenables sobre .rml-table ---------------------------- */
+
+.rml-th-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.rml-th-sortable[aria-sort='ascending']::after {
+  content: ' ↑';
+  color: var(--rml-action);
+}
+
+.rml-th-sortable[aria-sort='descending']::after {
+  content: ' ↓';
+  color: var(--rml-action);
+}
+
+/* ---- Switch, checkbox y radio ------------------------------------------- */
+
+.rml-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rml-space-3, 0.75rem);
+  cursor: pointer;
+}
+
+.rml-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.rml-switch-track {
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--rml-border-strong);
+  border: 1px solid var(--rml-border);
+  transition: background var(--rml-duration-fast, 150ms) ease;
+  flex: none;
+}
+
+.rml-switch-thumb {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0.125rem;
+  border-radius: 999px;
+  background: var(--rml-surface-card);
+  box-shadow: var(--rml-shadow-xs);
+  transition: transform var(--rml-duration-fast, 150ms) ease;
+}
+
+.rml-switch input:checked + .rml-switch-track {
+  background: var(--rml-action);
+  border-color: var(--rml-action);
+}
+
+.rml-switch input:checked + .rml-switch-track .rml-switch-thumb {
+  transform: translateX(1.25rem);
+}
+
+.rml-switch input:focus-visible + .rml-switch-track {
+  box-shadow: var(--rml-focus-ring);
+}
+
+.rml-check,
+.rml-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rml-space-2, 0.5rem);
+  cursor: pointer;
+}
+
+.rml-check input,
+.rml-radio input {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--rml-action);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rml-switch-track,
+  .rml-switch-thumb {
+    transition: none;
+  }
+}
+
+/* ---- Estado vacío (RF-LIV-011) ----------------------------------------- */
+
+.rml-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rml-space-3, 0.75rem);
+  padding: var(--rml-space-7, 2rem);
+  text-align: center;
+  color: var(--rml-text-secondary);
+  background: var(--rml-surface-sunken);
+  border: 1px dashed var(--rml-border);
+  border-radius: var(--rml-radius-md, 8px);
+}
+
+.rml-empty-title {
+  font-family: var(--rml-font-display);
+  color: var(--rml-text-strong);
+}
+
+/* ---- Skeletons --------------------------------------------------------- */
+
+.rml-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--rml-surface-sunken) 25%,
+    var(--rml-border-subtle) 37%,
+    var(--rml-surface-sunken) 63%
+  );
+  background-size: 400% 100%;
+  animation: rml-skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--rml-radius-sm, 4px);
+  min-height: 1rem;
+}
+
+@keyframes rml-skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rml-skeleton {
+    animation: none;
+  }
+}
+
+/* ---- Toasts: el paquete trae las clases, falta la pila ----------------- */
+
+.rml-toast-stack {
+  position: fixed;
+  bottom: var(--rml-space-5, 1.25rem);
+  right: var(--rml-space-5, 1.25rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--rml-space-3, 0.75rem);
+  z-index: 1100;
+  max-width: min(24rem, calc(100vw - 2rem));
+}
+
+/* ---- Layout de mapa -----------------------------------------------------
+   El panel de la ficha no puede tapar la geometría al encuadrar (RF-WEB-011):
+   el margen de ajuste lo descuenta el JavaScript leyendo el ancho real del
+   panel, y este layout lo expone como variable para que haya una sola fuente. */
+
+.rml-map-layout {
+  --rml-map-panel-width: 22rem;
+  display: grid;
+  grid-template-columns: 1fr var(--rml-map-panel-width);
+  min-height: 0;
+  height: 100%;
+}
+
+.rml-map-layout[data-panel='closed'] {
+  grid-template-columns: 1fr 0;
+}
+
+.rml-map-canvas {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+.rml-map-panel {
+  border-left: 1px solid var(--rml-border-subtle);
+  background: var(--rml-surface-card);
+  overflow: auto;
+  min-width: 0;
+}
+
+/* Por debajo del mínimo de edición cartográfica (1024 px) el panel pasa a ser
+   una lámina inferior: en móvil no hay lugar para dos columnas (RNF-UI-001). */
+@media (max-width: 1023px) {
+  .rml-map-layout,
+  .rml-map-layout[data-panel='closed'] {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .rml-map-panel {
+    border-left: none;
+    border-top: 1px solid var(--rml-border-subtle);
+    max-height: 45vh;
+  }
+}
+
+/* ---- Leyenda de capas -------------------------------------------------- */
+
+.rml-legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rml-space-2, 0.5rem);
+}
+
+.rml-legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--rml-space-2, 0.5rem);
+  color: var(--rml-text-body);
+}
+
+.rml-legend-swatch {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: var(--rml-radius-sm, 4px);
+  border: 1px solid var(--rml-border);
+  flex: none;
+}
+
+/* ---- Escala tipográfica del kiosco -------------------------------------
+   LIVE se ve a metros de distancia, no a 60 cm: necesita su propio escalón
+   sobre los tokens del RDS, no los tamaños del backoffice. Los valores
+   definitivos dependen de G4 (resolución nativa, escalado del sistema y
+   distancia de visualización); hasta entonces esto es un punto de partida
+   verificado sólo en 1920×1080 y 3840×2160. */
+
+.rml-kiosk {
+  font-size: clamp(1rem, 0.85vw + 0.5rem, 1.75rem);
+  /* Varios televisores recortan entre 3 % y 5 % del perímetro en modo TV: los
+     controles y la hora de última sincronización no pueden vivir pegadas al
+     borde. */
+  padding: 3vmin;
+}
+
+.rml-kiosk h1 {
+  font-size: clamp(1.75rem, 2vw + 0.5rem, 3.5rem);
+}
+
+.rml-kiosk .rml-badge {
+  font-size: 0.9em;
+}

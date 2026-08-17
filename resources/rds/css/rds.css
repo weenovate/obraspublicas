@@ -1,0 +1,16 @@
+/* ============================================================
+   Ramallo Design System (RDS) — hoja de estilos completa
+   Único punto de entrada. Importalo una vez en tu proyecto:
+       <link rel="stylesheet" href="css/rds.css">
+   o desde tu CSS:  @import 'css/rds.css';
+   Orden: tokens → base → componentes.
+   ============================================================ */
+@import './tokens/fonts.css';
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/radius.css';
+@import './tokens/elevation.css';
+@import './tokens/motion.css';
+@import './base.css';
+@import './components.css';
