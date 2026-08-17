@@ -1,0 +1,30 @@
+/* ============================================================
+   Ramallo · Espaciado y layout
+   Escala 4-pt. Contenedor máx ~1200px, grilla de 12 columnas.
+   ============================================================ */
+
+:root {
+  /* Escala de espaciado (4-pt) */
+  --rml-space-0:  0;
+  --rml-space-1:  0.25rem; /* 4 */
+  --rml-space-2:  0.5rem;  /* 8 */
+  --rml-space-3:  0.75rem; /* 12 */
+  --rml-space-4:  1rem;    /* 16 */
+  --rml-space-5:  1.5rem;  /* 24 */
+  --rml-space-6:  2rem;    /* 32 */
+  --rml-space-7:  3rem;    /* 48 */
+  --rml-space-8:  4rem;    /* 64 */
+  --rml-space-9:  6rem;    /* 96 */
+
+  /* Layout */
+  --rml-container-max: 1200px;
+  --rml-container-pad: 1.5rem;
+  --rml-grid-columns:  12; /* @kind other */
+  --rml-grid-gutter:   1.5rem;
+
+  /* Breakpoints (referencia) */
+  --rml-bp-sm: 640px;
+  --rml-bp-md: 768px;
+  --rml-bp-lg: 1024px;
+  --rml-bp-xl: 1280px;
+}

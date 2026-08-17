@@ -1,0 +1,12 @@
+/* ============================================================
+   Ramallo · Elevación / sombras
+   Sombras suaves teñidas de verde-neutro, nunca negro puro.
+   ============================================================ */
+
+:root {
+  --rml-shadow-xs: 0 1px 2px rgba(22, 26, 20, 0.06);
+  --rml-shadow-sm: 0 1px 3px rgba(22, 26, 20, 0.08), 0 1px 2px rgba(22, 26, 20, 0.06);
+  --rml-shadow-md: 0 4px 10px rgba(22, 26, 20, 0.08), 0 2px 4px rgba(22, 26, 20, 0.05);
+  --rml-shadow-lg: 0 12px 28px rgba(22, 26, 20, 0.12), 0 4px 8px rgba(22, 26, 20, 0.06);
+  --rml-shadow-xl: 0 24px 56px rgba(22, 26, 20, 0.16);
+}

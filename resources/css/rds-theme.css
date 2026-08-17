@@ -1,0 +1,58 @@
+/* ============================================================
+   EXTENSIÓN del RDS — `color-scheme` por estado de tema
+   ------------------------------------------------------------
+   Corrección de la sección 9 del plan. Una versión anterior declaraba
+   `color-scheme: light dark` en `:root` de forma incondicional, y eso está mal:
+   con `data-theme="light"` explícito en un dispositivo configurado en oscuro,
+   ese valor autoriza al navegador a pintar los controles nativos —campos de
+   fecha, desplegables, barras de desplazamiento— en oscuro, contradiciendo la
+   elección del usuario.
+
+   La declaración va por estado, de modo que los controles nativos sigan siempre
+   al tema EFECTIVO:
+
+   - elección explícita clara  → `light`
+   - elección explícita oscura → `dark`
+   - sin elección              → `light dark`, y manda el dispositivo
+
+   Se verifica en Playwright con los tres estados, incluidos los dos cruzados
+   (claro explícito sobre dispositivo oscuro y viceversa).
+   ============================================================ */
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+:root:not([data-theme]) {
+  color-scheme: light dark;
+}
+
+/* El tema se aplica antes de la primera pintura: el backend estampa
+   `data-theme` en `<html>` según `theme_preference` (RF-CFG-004) y la Web
+   pública lo resuelve con `localStorage` más la preferencia del dispositivo
+   (RF-THE-001). Esta transición es sólo para el cambio manual en caliente, y
+   se anula para quien pidió menos movimiento. */
+:root {
+  --rml-theme-transition: background-color var(--rml-duration-fast, 150ms) ease,
+    color var(--rml-duration-fast, 150ms) ease,
+    border-color var(--rml-duration-fast, 150ms) ease;
+}
+
+/* La transición se habilita recién DESPUÉS del primer pintado, con una clase que
+   agrega el JavaScript. Si estuviera activa desde el arranque, aplicar el tema
+   guardado haría que toda la página se desvaneciera de claro a oscuro en cada
+   carga: exactamente el destello que el estampado temprano de `data-theme`
+   busca evitar. La transición es para el cambio manual, no para la carga. */
+body.rml-theme-transitions {
+  transition: var(--rml-theme-transition);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.rml-theme-transitions {
+    transition: none;
+  }
+}

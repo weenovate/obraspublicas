@@ -1,0 +1,15 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - database
+        - poc
+        - config
+        - routes
+
+    # Nivel acordado para F0. Sube un escalón por fase mientras no genere ruido:
+    # el objetivo es que el análisis encuentre errores, no que se silencie.
+    level: 6
+

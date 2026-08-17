@@ -1,0 +1,29 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "rds:contraste": "node scripts/rds-contraste.mjs",
+        "rds:lint": "node scripts/rds-lint.mjs",
+        "rds:fuentes": "node scripts/rds-fuentes.mjs",
+        "rds:verificar": "npm run rds:lint && npm run rds:contraste",
+        "e2e": "playwright test"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.62.1",
+        "@vitejs/plugin-vue": "^6.0.8",
+        "concurrently": "^10.0.3",
+        "laravel-vite-plugin": "^3.1",
+        "vite": "^8.0.0"
+    },
+    "optionalDependencies": {
+        "@laravel/multiplex": "^0.4.1"
+    },
+    "dependencies": {
+        "@inertiajs/vue3": "^2.3.27",
+        "leaflet": "^1.9.4",
+        "vue": "^3.5.41"
+    }
+}

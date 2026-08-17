@@ -1,0 +1,173 @@
+/* ============================================================
+   EXTENSIÓN del Ramallo Design System — tema oscuro
+   ------------------------------------------------------------
+   Esto NO es parte del paquete original. El RDS recibido no trae tema oscuro:
+   cero ocurrencias de `prefers-color-scheme`, `data-theme` o `color-scheme`, y
+   todos los tokens viven en un `:root` con valores claros. El spec exige los dos
+   temas (RF-THE-001/002, RF-CFG-004/005, RF-LIV-012, CA-025), así que hay que
+   construirlo.
+
+   Reglas que se respetan acá:
+
+   1. Se redefinen SÓLO los aliases semánticos. Las escalas de marca
+      (`--rml-green-*`, `--rml-cyan-*`, `--rml-orange-*`, `--rml-neutral-*`) no
+      se tocan: los aliases se recomponen apuntando a otros pasos de las mismas
+      escalas, así la identidad se conserva y el paquete queda extendido, no
+      modificado.
+   2. Dos selectores para cubrir los tres estados del tema: el atributo explícito
+      y la preferencia del dispositivo con guarda contra la elección explícita
+      del usuario.
+   3. Ningún color se define ÚNICAMENTE dentro de un media query: la paleta clara
+      completa vive en el `:root` del paquete original.
+   4. El contraste no se estima: `npm run rds:contraste` mide cada par
+      texto/superficie de los dos temas y falla el build por debajo de AA
+      (RNF-ACC-001).
+
+   Única adición a las escalas: un paso `--rml-neutral-950`, más oscuro que el
+   900, porque en oscuro la superficie hundida tiene que leerse por debajo de la
+   página y el paquete no trae un escalón así. Se agrega en este archivo, no en
+   el del paquete.
+   ============================================================ */
+
+/* ---- Elección explícita del usuario (RF-CFG-004) ---- */
+:root[data-theme='dark'] {
+  /* Adición documentada: escalón más oscuro que el 900 del paquete. */
+  --rml-neutral-950: #0D0F0C;
+
+  /* Texto */
+  --rml-text-strong: var(--rml-neutral-50);
+  --rml-text-body: var(--rml-neutral-100);
+  --rml-text-secondary: var(--rml-neutral-300);
+  --rml-text-muted: var(--rml-neutral-400);
+  --rml-text-disabled: var(--rml-neutral-500);
+  /* En claro es blanco sobre verde 600; en oscuro la acción es verde claro, así
+     que el texto encima tiene que ser oscuro o se vuelve ilegible. Este es
+     exactamente el token que el plan anticipaba que dejaría de ser blanco. */
+  --rml-text-on-brand: var(--rml-neutral-900);
+  --rml-text-link: var(--rml-green-300);
+  --rml-text-link-hover: var(--rml-green-200);
+
+  /* Superficies */
+  --rml-surface-page: var(--rml-neutral-900);
+  --rml-surface-card: var(--rml-neutral-800);
+  --rml-surface-sunken: var(--rml-neutral-950);
+  --rml-surface-brand: var(--rml-green-700);
+  --rml-surface-brand-soft: var(--rml-green-900);
+  --rml-surface-cyan-soft: var(--rml-cyan-900);
+  --rml-surface-orange-soft: var(--rml-orange-900);
+
+  /* Bordes */
+  --rml-border-subtle: var(--rml-neutral-700);
+  /* 1.4.11: el borde de un campo tiene que dar 3:1 contra la superficie. El
+     neutral-600 da 1,99:1 sobre la tarjeta oscura, así que sube a neutral-400. */
+  --rml-border: var(--rml-neutral-400);
+  --rml-border-strong: var(--rml-neutral-300);
+  --rml-border-focus: var(--rml-cyan-400);
+
+  /* Acción: el verde 600 del tema claro no llega a AA sobre superficies
+     oscuras, así que los aliases suben a pasos más claros de la misma escala. */
+  --rml-action: var(--rml-green-400);
+  --rml-action-hover: var(--rml-green-300);
+  --rml-action-active: var(--rml-green-200);
+  --rml-action-soft: var(--rml-green-900);
+  --rml-action-soft-hover: var(--rml-green-800);
+
+  /* Acento */
+  --rml-accent: var(--rml-orange-400);
+  --rml-accent-hover: var(--rml-orange-300);
+  --rml-accent-active: var(--rml-orange-200);
+
+  /* Feedback: fondos oscuros teñidos y textos claros. Valores explícitos
+     porque las escalas de marca no cubren estos matices; los mide el script de
+     contraste igual que a todo lo demás. */
+  --rml-success: #5FBF5F;
+  --rml-success-bg: #16291A;
+  --rml-success-fg: #A8DEA8;
+
+  --rml-warning: #F9B261;
+  --rml-warning-bg: #33240F;
+  --rml-warning-fg: #FBCF9D;
+
+  --rml-error: #F08585;
+  --rml-error-bg: #331717;
+  --rml-error-fg: #F5B7B7;
+
+  --rml-info: #6BC2DE;
+  --rml-info-bg: #122B33;
+  --rml-info-fg: #A8DCEB;
+
+  /* Sombras: en oscuro el tinte verdoso no se percibe y hace falta más opacidad
+     para que la elevación siga leyéndose. */
+  --rml-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --rml-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --rml-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --rml-shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+  --rml-shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.7);
+
+  /* El anillo de foco lo define `rds-a11y.css` para los dos temas: es un
+     requisito de accesibilidad y conviene que tenga un solo dueño. */
+}
+
+/* ---- Preferencia del dispositivo (RF-THE-001) ----
+   La guarda `:not([data-theme='light'])` es imprescindible: sin ella, un usuario
+   que eligió claro explícitamente vería oscuro igual en un dispositivo
+   configurado en oscuro, que es justo lo contrario de respetar su elección. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --rml-neutral-950: #0D0F0C;
+
+    --rml-text-strong: var(--rml-neutral-50);
+    --rml-text-body: var(--rml-neutral-100);
+    --rml-text-secondary: var(--rml-neutral-300);
+    --rml-text-muted: var(--rml-neutral-400);
+    --rml-text-disabled: var(--rml-neutral-500);
+    --rml-text-on-brand: var(--rml-neutral-900);
+    --rml-text-link: var(--rml-green-300);
+    --rml-text-link-hover: var(--rml-green-200);
+
+    --rml-surface-page: var(--rml-neutral-900);
+    --rml-surface-card: var(--rml-neutral-800);
+    --rml-surface-sunken: var(--rml-neutral-950);
+    --rml-surface-brand: var(--rml-green-700);
+    --rml-surface-brand-soft: var(--rml-green-900);
+    --rml-surface-cyan-soft: var(--rml-cyan-900);
+    --rml-surface-orange-soft: var(--rml-orange-900);
+
+    --rml-border-subtle: var(--rml-neutral-700);
+    --rml-border: var(--rml-neutral-400);
+    --rml-border-strong: var(--rml-neutral-300);
+    --rml-border-focus: var(--rml-cyan-400);
+
+    --rml-action: var(--rml-green-400);
+    --rml-action-hover: var(--rml-green-300);
+    --rml-action-active: var(--rml-green-200);
+    --rml-action-soft: var(--rml-green-900);
+    --rml-action-soft-hover: var(--rml-green-800);
+
+    --rml-accent: var(--rml-orange-400);
+    --rml-accent-hover: var(--rml-orange-300);
+    --rml-accent-active: var(--rml-orange-200);
+
+    --rml-success: #5FBF5F;
+    --rml-success-bg: #16291A;
+    --rml-success-fg: #A8DEA8;
+
+    --rml-warning: #F9B261;
+    --rml-warning-bg: #33240F;
+    --rml-warning-fg: #FBCF9D;
+
+    --rml-error: #F08585;
+    --rml-error-bg: #331717;
+    --rml-error-fg: #F5B7B7;
+
+    --rml-info: #6BC2DE;
+    --rml-info-bg: #122B33;
+    --rml-info-fg: #A8DCEB;
+
+    --rml-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --rml-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --rml-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+    --rml-shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+    --rml-shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.7);
+  }
+}

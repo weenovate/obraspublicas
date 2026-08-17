@@ -1,0 +1,49 @@
+# Desarrollo local. La versión del motor no es negociable: es la misma que
+# corre en producción (compuerta G1, `SELECT VERSION()` registrado en
+# docs/MATRIZ-ESPACIAL.md). Un 10.11.x distinto invalidaría la matriz espacial,
+# porque parte de sus celdas dependen de qué funciones trae el build.
+services:
+  mariadb:
+    image: mariadb:10.11.18
+    container_name: obras-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret}
+      MARIADB_DATABASE: ${DB_DATABASE:-obras}
+      MARIADB_USER: ${DB_USERNAME:-obras}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      # 3307 en el host para no chocar con un MySQL/MariaDB local.
+      - '${DB_PORT:-3307}:3306'
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Base separada para la suite de tests: así `php artisan test` no pisa los
+  # datos con los que se está trabajando a mano.
+  mariadb-test:
+    image: mariadb:10.11.18
+    container_name: obras-mariadb-test
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret}
+      MARIADB_DATABASE: obras_test
+      MARIADB_USER: ${DB_USERNAME:-obras}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - '${DB_TEST_PORT:-3308}:3306'
+    tmpfs:
+      # Los datos de test son desechables: en memoria corre más rápido.
+      - /var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mariadb-data:

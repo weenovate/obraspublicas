@@ -1,0 +1,159 @@
+/* ============================================================
+   EXTENSIÓN del RDS — puente con Leaflet 1.9.4
+   ------------------------------------------------------------
+   Leaflet trae su propio CSS con colores fijos: controles blancos, popups
+   blancos con texto oscuro, atribución sobre fondo blanco translúcido. Sin este
+   puente, en tema oscuro los controles quedan blancos y los popups ilegibles, lo
+   que incumple RF-THE-002 (el tema alcanza a TODA la interfaz, mapa incluido).
+
+   Todo sale de tokens `--rml-*`: cambiar el tema recolorea el mapa sin tocar
+   una línea de JavaScript.
+
+   Este archivo cubre lo que ya existe en F0. Los controles propios del mapa
+   —leyenda de capas, panel de ficha, clustering— se agregan en F4 con la misma
+   disciplina.
+   ============================================================ */
+
+/* ---- Contenedor ---------------------------------------------------------- */
+
+.leaflet-container {
+  background: var(--rml-surface-sunken);
+  font-family: var(--rml-font-body);
+  /* Leaflet fija su propio tamaño; se alinea con la escala del sistema. */
+  font-size: var(--rml-text-sm, 0.875rem);
+}
+
+/* El foco de teclado sobre el mapa tiene que verse: es navegable (RNF-ACC-001). */
+.leaflet-container:focus-visible {
+  outline: none;
+  box-shadow: var(--rml-focus-ring);
+}
+
+/* ---- Controles de zoom y capas ------------------------------------------ */
+
+.leaflet-bar,
+.leaflet-control-layers {
+  border: 1px solid var(--rml-border);
+  border-radius: var(--rml-radius-md, 8px);
+  box-shadow: var(--rml-shadow-sm);
+  background: var(--rml-surface-card);
+  /* Leaflet dibuja un borde propio más duro. */
+  background-clip: padding-box;
+}
+
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background: var(--rml-surface-card);
+  color: var(--rml-text-body);
+  border-bottom-color: var(--rml-border-subtle);
+}
+
+.leaflet-bar a:hover {
+  background: var(--rml-surface-sunken);
+  color: var(--rml-text-strong);
+}
+
+.leaflet-bar a:focus-visible,
+.leaflet-control-layers-toggle:focus-visible {
+  box-shadow: var(--rml-focus-ring);
+  z-index: 1;
+}
+
+.leaflet-bar a.leaflet-disabled {
+  background: var(--rml-surface-sunken);
+  color: var(--rml-text-disabled);
+}
+
+.leaflet-control-layers-expanded {
+  background: var(--rml-surface-card);
+  color: var(--rml-text-body);
+  padding: var(--rml-space-3, 0.75rem);
+}
+
+.leaflet-control-layers-separator {
+  border-top: 1px solid var(--rml-border-subtle);
+}
+
+/* ---- Popups y tooltips -------------------------------------------------- */
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--rml-surface-card);
+  color: var(--rml-text-body);
+  box-shadow: var(--rml-shadow-md);
+}
+
+.leaflet-popup-content-wrapper {
+  border: 1px solid var(--rml-border-subtle);
+  border-radius: var(--rml-radius-md, 8px);
+}
+
+.leaflet-popup-content a {
+  color: var(--rml-text-link);
+}
+
+.leaflet-popup-close-button {
+  color: var(--rml-text-muted) !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: var(--rml-text-strong) !important;
+}
+
+.leaflet-tooltip {
+  background: var(--rml-surface-card);
+  border: 1px solid var(--rml-border);
+  color: var(--rml-text-body);
+  box-shadow: var(--rml-shadow-sm);
+}
+
+.leaflet-tooltip-top::before {
+  border-top-color: var(--rml-border);
+}
+
+.leaflet-tooltip-bottom::before {
+  border-bottom-color: var(--rml-border);
+}
+
+.leaflet-tooltip-left::before {
+  border-left-color: var(--rml-border);
+}
+
+.leaflet-tooltip-right::before {
+  border-right-color: var(--rml-border);
+}
+
+/* ---- Atribución ---------------------------------------------------------
+   La atribución del proveedor de teselas se muestra siempre (spec 11.2): es
+   condición de uso, no un adorno que se pueda esconder. */
+
+.leaflet-control-attribution {
+  background: var(--rml-surface-card);
+  color: var(--rml-text-muted);
+  border-top-left-radius: var(--rml-radius-sm, 4px);
+}
+
+.leaflet-control-attribution a {
+  color: var(--rml-text-link);
+}
+
+/* ---- Escala ------------------------------------------------------------- */
+
+.leaflet-control-scale-line {
+  background: var(--rml-surface-card);
+  border: 1px solid var(--rml-border);
+  border-top: none;
+  color: var(--rml-text-body);
+}
+
+/* ---- Teselas en tema oscuro ---------------------------------------------
+   Las teselas vienen del proveedor con su propia paleta. Si el proveedor no
+   ofrece un estilo oscuro, este filtro las adapta como último recurso: no es
+   ideal —invierte también los rótulos— así que en F4 se prefiere un estilo
+   oscuro del proveedor y este bloque queda como respaldo, desactivado por
+   omisión mediante la clase. */
+
+:root[data-theme='dark'] .leaflet-tile-pane.rml-tiles-invert,
+:root:not([data-theme='light']) .leaflet-tile-pane.rml-tiles-invert {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}

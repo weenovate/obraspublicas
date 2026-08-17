@@ -1,0 +1,12 @@
+/* ============================================================
+   Ramallo · Radios de esquina
+   Suaves, coherentes con el carácter redondeado del logo.
+   ============================================================ */
+
+:root {
+  --rml-radius-sm:   4px;
+  --rml-radius-md:   8px;
+  --rml-radius-lg:   12px;
+  --rml-radius-xl:   20px;
+  --rml-radius-pill: 999px;
+}

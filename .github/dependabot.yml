@@ -1,0 +1,47 @@
+version: 2
+
+# Actualizaciones automáticas para los tres ecosistemas del proyecto. Sin esto,
+# `composer audit` y `npm audit` avisan del problema pero nadie prepara el
+# arreglo, y la deuda se acumula en silencio entre fases.
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Un solo PR para el framework y su entorno: actualizarlos por separado
+      # genera conflictos de versión entre paquetes que se liberan juntos.
+      laravel:
+        patterns:
+          - 'laravel/*'
+          - 'illuminate/*'
+      calidad:
+        patterns:
+          - 'pestphp/*'
+          - 'larastan/*'
+          - 'phpstan/*'
+          - 'laravel/pint'
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      frontend:
+        patterns:
+          - 'vue'
+          - '@vitejs/*'
+          - 'vite'
+          - '@inertiajs/*'
+      pruebas:
+        patterns:
+          - '@playwright/*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

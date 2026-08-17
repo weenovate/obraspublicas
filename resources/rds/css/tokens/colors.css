@@ -1,0 +1,117 @@
+/* ============================================================
+   Ramallo · Color tokens
+   Prefijo --rml-. El paso 500 es el valor exacto de marca.
+   Escalas derivadas del logo (hoja verde, agua celeste, mano naranja).
+   ============================================================ */
+
+:root {
+  /* ---- Verde · Primary (hoja + wordmark) ---- */
+  --rml-green-50:  #F4F8F1;
+  --rml-green-100: #E5EEDD;
+  --rml-green-200: #C9EBAD;
+  --rml-green-300: #A8DE7C;
+  --rml-green-400: #8DD453;
+  --rml-green-500: #75C932; /* valor de marca */
+  --rml-green-600: #5EA128;
+  --rml-green-700: #497D1F;
+  --rml-green-800: #365C17;
+  --rml-green-900: #254010;
+
+  /* ---- Celeste · Secondary (agua / río Paraná) ---- */
+  --rml-cyan-50:  #F0F7FA;
+  --rml-cyan-100: #DAEBF1;
+  --rml-cyan-200: #A1E1F7;
+  --rml-cyan-300: #69CFF2;
+  --rml-cyan-400: #3AC0EE;
+  --rml-cyan-500: #66CEF2; /* valor de marca */
+  --rml-cyan-600: #27BAED;
+  --rml-cyan-700: #1196C5;
+  --rml-cyan-800: #0C7092;
+  --rml-cyan-900: #094E65;
+
+  /* ---- Naranja · Accent (mano / espiga) ---- */
+  --rml-orange-50:  #FAF5F0;
+  --rml-orange-100: #F3E6D8;
+  --rml-orange-200: #FBCF9D;
+  --rml-orange-300: #F9B261;
+  --rml-orange-400: #F89930;
+  --rml-orange-500: #F7911F; /* valor de marca */
+  --rml-orange-600: #D77508;
+  --rml-orange-700: #A65B06;
+  --rml-orange-800: #7B4304;
+  --rml-orange-900: #562F03;
+
+  /* ---- Neutrales (gris cálido-verdoso, no neutro puro) ---- */
+  --rml-neutral-0:   #FFFFFF;
+  --rml-neutral-50:  #F7F9F6;
+  --rml-neutral-100: #EEF1EC;
+  --rml-neutral-200: #DCE1D8;
+  --rml-neutral-300: #C2C9BD;
+  --rml-neutral-400: #9BA396;
+  --rml-neutral-500: #6F7768;
+  --rml-neutral-600: #525A4C;
+  --rml-neutral-700: #3C4337;
+  --rml-neutral-800: #272C24;
+  --rml-neutral-900: #161A14;
+
+  /* ---- Semánticos / feedback ---- */
+  --rml-success:    #2E8B2E;
+  --rml-success-bg: #E7F4E7;
+  --rml-success-fg: #1F5E1F;
+
+  --rml-warning:    #F7911F;
+  --rml-warning-bg: #FDF0DF;
+  --rml-warning-fg: #7B4304;
+
+  --rml-error:    #D64545;
+  --rml-error-bg: #FBEAEA;
+  --rml-error-fg: #9B2C2C;
+
+  --rml-info:    #2F8FB3;
+  --rml-info-bg: #E4F2F8;
+  --rml-info-fg: #0C5A75;
+
+  /* ============================================================
+     Aliases semánticos — usar estos en componentes y layouts.
+     ============================================================ */
+
+  /* Texto */
+  --rml-text-strong:    var(--rml-neutral-900); /* títulos, máximo énfasis */
+  --rml-text-body:      var(--rml-neutral-800); /* cuerpo (14.27:1) */
+  --rml-text-secondary: var(--rml-neutral-600);
+  --rml-text-muted:     var(--rml-neutral-500); /* metadatos, leyendas */
+  --rml-text-disabled:  var(--rml-neutral-400);
+  --rml-text-on-brand:  #FFFFFF;
+  --rml-text-link:      var(--rml-green-700); /* mínimo 4.96:1 */
+  --rml-text-link-hover:var(--rml-green-800);
+
+  /* Superficies */
+  --rml-surface-page:   var(--rml-neutral-50);
+  --rml-surface-card:   var(--rml-neutral-0);
+  --rml-surface-sunken: var(--rml-neutral-100);
+  --rml-surface-brand:  var(--rml-green-500); /* grandes superficies decorativas */
+  --rml-surface-brand-soft: var(--rml-green-50);
+  --rml-surface-cyan-soft:  var(--rml-cyan-50);
+  --rml-surface-orange-soft:var(--rml-orange-50);
+
+  /* Bordes */
+  --rml-border-subtle: var(--rml-neutral-200);
+  --rml-border:        var(--rml-neutral-300);
+  --rml-border-strong: var(--rml-neutral-400);
+  --rml-border-focus:  var(--rml-cyan-600);
+
+  /* Acción (botones / enlaces de acción) */
+  --rml-action:          var(--rml-green-600);
+  --rml-action-hover:    var(--rml-green-700);
+  --rml-action-active:   var(--rml-green-800);
+  --rml-action-soft:     var(--rml-green-50);
+  --rml-action-soft-hover: var(--rml-green-100);
+
+  /* Acento (naranja, calidez humana — CTAs cálidos, destacados) */
+  --rml-accent:        var(--rml-orange-500);
+  --rml-accent-hover:  var(--rml-orange-600);
+  --rml-accent-active: var(--rml-orange-700);
+
+  /* Anillo de foco */
+  --rml-focus-ring: 0 0 0 3px var(--rml-cyan-200);
+}

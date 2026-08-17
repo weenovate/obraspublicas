@@ -1,0 +1,24 @@
+/* ============================================================
+   Punto de entrada de estilos — Obras Públicas de Ramallo
+   ------------------------------------------------------------
+   El orden importa y no es arbitrario:
+
+   1. `rds/css/rds.css`  — paquete original, intacto (tokens → base → componentes).
+   2. `rds-dark.css`     — tema oscuro: redefine aliases semánticos.
+   3. `rds-a11y.css`     — correcciones de contraste; van DESPUÉS del tema oscuro
+                           porque también corrigen tokens del tema oscuro y tienen
+                           que ganar.
+   4. `rds-theme.css`    — `color-scheme` por estado de tema.
+   5. `rds-leaflet.css`  — puente con Leaflet: sin esto, en oscuro los controles
+                           del mapa quedan blancos y los popups ilegibles.
+   6. `rds-app.css`      — componentes de aplicación que el RDS no cubre.
+
+   No hay Tailwind: el RDS es la única capa de estilos (D4).
+   ============================================================ */
+
+@import '../rds/css/rds.css';
+@import './rds-dark.css';
+@import './rds-a11y.css';
+@import './rds-theme.css';
+@import './rds-leaflet.css';
+@import './rds-app.css';

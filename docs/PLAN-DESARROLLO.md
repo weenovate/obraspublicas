@@ -1,0 +1,227 @@
+# Plan de desarrollo
+
+Basado en el plan aprobado **v2.3.1** con su fe de erratas. Este documento es la
+versión operativa: fases, compuertas, Definition of Done y estimaciones. El
+razonamiento de cada decisión está en [`ARQUITECTURA.md`](ARQUITECTURA.md).
+
+---
+
+## Estado
+
+| Fase / compuerta | Estado |
+|---|---|
+| **G1** — Motor de producción confirmado | ✅ Cerrada. MariaDB 10.11.18, `SELECT VERSION()` registrado |
+| **G2** — PoC espacial y matriz | ✅ **Cerrada en verde**. P3, P4, P6, P7 y P9 bloqueantes, todas verdes |
+| **F0** — Fundaciones | ✅ **Completada** |
+| **G3** — Dataset del IGN recortado a Ramallo | ⛔ Pendiente. **Bloquea F1** |
+| **G4** — Especificación del kiosco | ⛔ Pendiente. Bloquea la aceptación de F5 |
+| **G5** — Autorización escrita del RDS | ⛔ Pendiente. Bloquea la habilitación de la URL pública |
+| **F1** a **F7** | No iniciadas |
+
+---
+
+## Compuertas pendientes
+
+### G3 — Capa de departamentos del IGN (bloquea F1)
+
+Se necesita el archivo oficial recortado al partido de Ramallo, con: fecha de
+publicación, fecha de descarga, SRS de origen, transformación a EPSG:4326 y hash
+SHA-256. Se versiona en `database/geo/` y se **congela por versión**.
+
+De ahí salen el centro y el zoom por omisión del mapa, el viewbox de sesgo para la
+geocodificación y las coordenadas de los fixtures.
+
+**Ninguna coordenada del proyecto es dato verificado todavía.** Las de los
+fixtures son del orden correcto y deliberadamente asimétricas para detectar
+inversiones de ejes, pero no representan ubicaciones reales.
+
+El entorno de desarrollo tiene bloqueado el egreso hacia `ign.gob.ar` y
+`datos.gob.ar` por política, así que el archivo tiene que llegar por otra vía.
+
+### G4 — Especificación del kiosco (bloquea la aceptación de F5)
+
+RNF-UI-001 no cubre la pantalla de exhibición, que es justamente donde vive LIVE.
+Tres variables cambian el diseño por completo y hay que preguntarlas:
+
+- **Modelo del televisor y resolución nativa.**
+- **Escalado del sistema operativo.** Un TV 4K al 200 % da un viewport CSS de
+  1920 px; el mismo TV al 100 % da 3840 px. Son dos diseños distintos.
+- **Distancia de visualización.** Texto dimensionado para 60 cm es ilegible a 4 m.
+- **Navegador** del dispositivo.
+
+Hasta tenerlo, LIVE se prueba en 1920×1080 y 3840×2160 con relación de píxeles 1 y
+2, y la legibilidad a distancia se acepta en una prueba presencial.
+
+### G5 — Autorización del RDS (bloquea la URL pública)
+
+Ver [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md).
+
+---
+
+## Fases
+
+### F0 — Fundaciones ✅
+
+Scaffolding Laravel 13.25 + Inertia 2 + Vue 3 sobre MariaDB · RDS integrado con
+tema oscuro construido y contraste medido · primitivos Vue · tooling (Pint,
+Larastan, Pest, Playwright) · CI con MariaDB 10.11.18 y auditorías bloqueantes ·
+seguridad base con login mínimo funcional y auditoría atómica · PoC espacial de G2.
+
+### F1 — Datos, acceso, catálogos y obras (26–30 días-dev) ⛔ bloqueada por G3
+
+Las 11 migraciones restantes y seeders · autenticación completa con roles y
+políticas · catálogos con las reglas de modificación y desactivación · CRUD de
+obras con geometría manual · las dos columnas de fecha y `effective_end_date` ·
+generación de código `OBR-YYYY-XXXX` con secuencia atómica · concurrencia
+optimista · papelera lógica · componentes de aplicación del RDS.
+
+### F2 — Fotos y campos dinámicos (10–12)
+
+Ciclo completo de fotografías con cola, reintentos e idempotencia · formulario
+dinámico · galería con estados `PENDING`/`FAILED` y reintento.
+
+### F3 — Cartografía asistida (13–15)
+
+Geocodificación con Nominatim · pin móvil · trazado con ORS, previsualización y
+fallback manual · límites municipales · E2E de los editores.
+
+### F4 — Web pública y contrato de rendimiento (17–19)
+
+SPA pública · capas, filtros y clustering · URL compartible · allowlist de
+visibilidad · contrato de rendimiento del mapa con los dos modos de consulta ·
+caché versionado con snapshot y `ETag` · puente de Leaflet completo.
+
+### F5 — LIVE (14–16)
+
+Kiosco con sesión persistente · recorrido automático con sus siete criterios nuevos
+(CA-022a–g) · persistencia local · reconexión · prueba de memoria de ocho horas con
+los seis umbrales cuantitativos.
+
+### F6 — Administración (13–15)
+
+Papelera completa y borrado definitivo por tipeo exacto · UI de auditoría con diff
+· configuración tipada · usuarios y revocación de sesiones.
+
+### F7 — Calidad y producción (15–17)
+
+Seed de 10.000 obras · performance medida contra el contrato · WCAG 2.2 AA
+completo · rate limiting en todos los endpoints · backups y restauración
+cronometrada · despliegue · capacitación.
+
+---
+
+## Estimación
+
+| | Días-dev |
+|---|---|
+| F0 (completada) | 13–16 |
+| F1 | 26–30 |
+| F2 | 10–12 |
+| F3 | 13–15 |
+| F4 | 17–19 |
+| F5 | 14–16 |
+| F6 | 13–15 |
+| F7 | 15–17 |
+| **Subtotal** | **121–140** |
+| Contingencia 15 % | 18–21 |
+| **Total** | **139–161 días-dev** |
+
+**Días-dev no es calendario.** La conversión depende de factores que no controla el
+equipo de desarrollo:
+
+| Factor | Supuesto | Efecto si no se cumple |
+|---|---|---|
+| Dedicación | 5 días-dev por semana por desarrollador | Proporcional |
+| Respuesta de UAT | Observaciones en 5 días hábiles | Cada semana extra corre el calendario 1:1 |
+| Compuertas G3, G4, G5 | Insumos antes de necesitarlos | G3 bloquea F1; G5 bloquea la URL pública |
+| Proveedores | Cuentas de teselas y ORS activas antes de F3 | F3 y F4 a media máquina |
+| Coordinación | ~15 % de sobrecarga | Proporcional |
+
+Con esos supuestos: **1 desarrollador ≈ 32 a 37 semanas**; **2 desarrolladores ≈ 18
+a 21 semanas**, aprovechando que F4 y F5 son separables de F2 y F3.
+
+La brecha entre 139 días-dev y 37 semanas es coordinación, UAT y compuertas.
+Conviene que esté explícita desde el principio y no como sorpresa en el mes cinco.
+
+---
+
+## UAT
+
+**Una ronda por fase** para F1 a F7, con demostración en staging, registro de
+observaciones y **una** pasada de correcciones. F0 no lleva UAT de negocio: su
+entregable es infraestructura, y lleva revisión técnica.
+
+Para cerrar una ronda, cada observación se clasifica:
+
+| Clasificación | Qué implica |
+|---|---|
+| **Defecto** | Está dentro de lo especificado: se corrige en la pasada incluida |
+| **Cambio** | Es alcance nuevo: se cotiza aparte y no consume la contingencia |
+| **Aceptado como está** | Se registra y se cierra |
+
+Sin esa clasificación una ronda no cierra nunca, y es el mecanismo por el que un
+proyecto de siete fases se convierte en catorce.
+
+**No incluido:** segundas rondas por cambios de alcance, rediseños visuales
+posteriores a la aprobación del RDS, y capacitación más allá de la prevista en F7.
+
+---
+
+## Definition of Done
+
+Común a todas las fases:
+
+1. RF de la fase implementados y reflejados en [`BACKLOG.md`](BACKLOG.md) con
+   estado P/A justificado.
+2. Tests Pest en verde para **todos** los CA marcados A; los P documentan qué falta
+   y en qué fase cierran.
+3. Pint sin diferencias y Larastan sin hallazgos en el nivel acordado.
+4. `composer audit` y `npm audit --audit-level=high` sin severidad alta.
+5. Migraciones expansivas, o con rollback documentado y ensayado en staging.
+6. Auditoría emitiendo eventos para toda acción nueva, con lista de redacción
+   verificada por test y **atomicidad verificada** por la prueba de rollback.
+7. Mensajes en lenguaje de negocio, español de Argentina, fechas DD/MM/AAAA, metros.
+8. **Ningún color, espaciado, radio, sombra ni familia tipográfica literal.** Toda
+   pantalla nueva revisada en **ambos temas**.
+9. Desplegado en staging con `scripts/verificar-despliegue.sh` en verde.
+10. Una ronda de UAT registrada, con observaciones clasificadas y defectos
+    corregidos.
+11. Documentación actualizada y CI sin regresiones.
+
+Añadidos por fase: **F0** cerró con la matriz publicada, G2 resuelta, el throttle
+probado contra su endpoint real, el RDS pasando AA por script y el arnés Playwright
+con casos de humo. **F1** exige el round-trip de coordenadas en verde y el
+invariante `ST_Contains(geometry, representative_point)` en los tres tipos de
+geometría. **F2**, el ciclo de fotos probado incluyendo fallo y reintento. **F3**,
+que ORS caído no impida cargar una obra. **F4**, WCAG AA con axe y recorrido por
+teclado en los dos temas, el contrato de rendimiento cumplido, y prueba de que un
+campo oculto desaparece de la respuesta **y del caché**. **F5**, CA-022a–g y la
+corrida de 8 h cumpliendo los seis umbrales de memoria. **F6**, que ninguna ruta
+administrativa sea alcanzable por un usuario Obras Públicas. **F7**, restauración
+de backup completada y cronometrada dentro del RTO, ejercitando la custodia de la
+clave.
+
+---
+
+## Desviaciones aprobadas respecto de EF-OPR-001
+
+| # | Desviación | Sección afectada |
+|---|---|---|
+| D1 | MariaDB 10.11.18 en lugar de MySQL 8.4 LTS | 11.1, 11.2 |
+| D2 | Dos columnas de fecha de fin en lugar de una | 3.1, 3.3, 9.2, CA-004 |
+| D3 | Bandera `is_final` en `work_statuses` | 3.3, RF-OBR-005/006/009 |
+| D4 | RDS como capa de estilos, sin Tailwind; tema oscuro construido | 6.4, 7.3, 8.2 |
+| D5 | Criterios nuevos CA-022a…g para el recorrido de LIVE | 15.5 |
+| D6 | Sondeos más cortos (Web 30 s, LIVE 15 s), **dentro** del presupuesto | 6.1, 7.1, RF-BO-010 |
+
+D6 no relaja nada: acorta el sondeo para poder **cumplir** el presupuesto de
+propagación.
+
+---
+
+## Fuera de alcance (spec 16)
+
+Multi-municipio · presupuesto o contratista · workflow de aprobación · importación
+y exportación · API pública para terceros · 2FA · recuperación automática por
+email · videos o documentos adjuntos · cálculo de superficie de polígonos · mapas
+offline · apps móviles nativas.

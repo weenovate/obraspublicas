@@ -1,0 +1,118 @@
+/* ============================================================
+   EXTENSIÓN del RDS — correcciones de accesibilidad (RNF-ACC-001)
+   ------------------------------------------------------------
+   HALLAZGO, para revisión de la Municipalidad: el RDS tal como fue entregado
+   **no cumple WCAG 2.2 AA** en varios pares del TEMA CLARO. No es una opinión,
+   son mediciones de `npm run rds:contraste`:
+
+   | Par | Medido | Mínimo | Dónde afecta |
+   |---|---|---|---|
+   | `text-on-brand` (#FFFFFF) sobre `action` (green-600 #5EA128) | 3,18:1 | 4,5:1 | todo botón primario |
+   | `text-on-brand` (#FFFFFF) sobre `surface-brand` (green-500 #75C932) | 2,07:1 | 4,5:1 | bandas y superficies de marca |
+   | `text-muted` (neutral-500) sobre `surface-page` | 4,39:1 | 4,5:1 | metadatos y leyendas |
+   | `text-muted` (neutral-500) sobre `surface-sunken` | 4,08:1 | 4,5:1 | ídem sobre fondo hundido |
+   | `text-link` (green-700) sobre `surface-sunken` | 4,35:1 | 4,5:1 | enlaces en tarjetas hundidas |
+   | `action` (green-600) como borde sobre `surface-sunken` | 2,79:1 | 3:1 | borde del botón secundario |
+   | `border` (neutral-300) sobre `surface-card` | 1,76:1 | 3:1 | borde de todo campo de formulario |
+   | `focus-ring` (cyan-200) sobre `surface-card` | 1,30:1 | 3:1 | indicador de foco (2.4.11/1.4.11) |
+
+   El botón primario y el borde de los campos son los dos más serios: afectan
+   cada pantalla del backoffice y el indicador de foco es el que usa quien
+   navega por teclado.
+
+   Criterios de esta corrección:
+
+   1. **No se toca ninguna escala de marca.** Los aliases se recomponen hacia
+      otros pasos de las mismas escalas, así que el verde sigue siendo el verde
+      de Ramallo, un paso más oscuro donde hace falta.
+   2. **El verde de marca exacto se conserva donde es decorativo.**
+      `--rml-surface-brand` sigue siendo `green-500`: en lugar de oscurecer la
+      banda, se agrega `--rml-text-on-surface-brand` con texto oscuro, que sobre
+      ese verde da 8,52:1.
+   3. **Tres tokens nuevos**, porque el paquete usa un solo `--rml-text-on-brand`
+      para el botón verde y el naranja, y no hay un color de texto que cumpla AA
+      sobre los dos: `--rml-text-on-accent`, `--rml-text-on-surface-brand` y
+      `--rml-focus-ring-color`.
+   4. Cada cambio queda medido en `docs/DESIGN-SYSTEM.md` con el antes y el
+      después, para que la Municipalidad decida con números si acepta el ajuste
+      visual o prefiere revisar la paleta de origen.
+   ============================================================ */
+
+:root {
+  /* ---- Acción: green-600 no llega a AA con texto blanco (3,18:1). ---- */
+  --rml-action: var(--rml-green-700); /* blanco encima: 4,96:1 */
+  --rml-action-hover: var(--rml-green-800); /* blanco encima: 7,78:1 */
+  --rml-action-active: var(--rml-green-900); /* blanco encima: 11,54:1 */
+
+  /* ---- Texto secundario y enlaces ---- */
+  --rml-text-muted: var(--rml-neutral-600); /* 6,30:1 en el peor fondo */
+  --rml-text-link: var(--rml-green-800); /* 6,83:1 sobre hundido */
+  --rml-text-link-hover: var(--rml-green-900);
+
+  /* ---- Borde de campos: 1.4.11 exige 3:1 para el límite de un control ---- */
+  --rml-border: var(--rml-neutral-500); /* 4,65:1 sobre tarjeta */
+
+  /* ---- Acento: el naranja lleva texto oscuro, así que hover y active se
+     ACLARAN en lugar de oscurecerse. El paquete los bajaba a orange-600/700, y
+     texto oscuro sobre orange-700 da 3,46:1: el estado presionado del botón
+     quedaba por debajo de AA. ---- */
+  --rml-accent: var(--rml-orange-500); /* el naranja de marca, intacto */
+  --rml-accent-hover: var(--rml-orange-400);
+  --rml-accent-active: var(--rml-orange-300);
+
+  /* ---- Tokens nuevos de esta extensión ---- */
+  /* Sobre el naranja de marca el texto tiene que ser oscuro; blanco da 2,33:1. */
+  --rml-text-on-accent: var(--rml-neutral-900);
+  /* Sobre el verde 500 decorativo, texto oscuro: 8,52:1. */
+  --rml-text-on-surface-brand: var(--rml-neutral-900);
+  /* Color sólido del anillo de foco, el que tiene que cumplir 3:1.
+     cyan-700 (#1196C5) da 2,98:1 sobre la superficie hundida: no alcanza por
+     dos centésimas, y «casi» no es un criterio. Se usa cyan-800. */
+  --rml-focus-ring-color: var(--rml-cyan-800); /* 4,92:1 en el peor fondo */
+
+  /* El anillo conserva el halo suave del paquete, pero el trazo que lo hace
+     perceptible es el interior sólido: sin él, el foco de cyan-200 daba 1,30:1
+     y quien navega por teclado no veía dónde estaba. */
+  --rml-focus-ring: 0 0 0 2px var(--rml-focus-ring-color),
+    0 0 0 5px rgba(105, 207, 242, 0.35);
+}
+
+:root[data-theme='dark'] {
+  /* En oscuro el problema se invierte: los verdes claros necesitan texto
+     oscuro, y eso ya lo resuelve `--rml-text-on-brand`. Lo que falta es la
+     superficie de marca, que con green-700 y texto oscuro daba 3,55:1. */
+  --rml-surface-brand: var(--rml-green-600); /* texto oscuro encima: 5,54:1 */
+  --rml-text-on-accent: var(--rml-neutral-900);
+  --rml-text-on-surface-brand: var(--rml-neutral-900);
+  --rml-focus-ring-color: var(--rml-cyan-400);
+  --rml-focus-ring: 0 0 0 2px var(--rml-focus-ring-color),
+    0 0 0 5px rgba(58, 192, 238, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --rml-surface-brand: var(--rml-green-600);
+    --rml-text-on-accent: var(--rml-neutral-900);
+    --rml-text-on-surface-brand: var(--rml-neutral-900);
+    --rml-focus-ring-color: var(--rml-cyan-400);
+    --rml-focus-ring: 0 0 0 2px var(--rml-focus-ring-color),
+      0 0 0 5px rgba(58, 192, 238, 0.35);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Overrides de componente, mínimos y sólo donde el token nuevo hace falta.
+   El paquete pinta el botón naranja con `--rml-text-on-brand`, que es blanco:
+   sobre el naranja de marca eso da 2,33:1.
+   --------------------------------------------------------------------------- */
+
+.rml-btn-accent,
+.rml-btn-accent:hover {
+  color: var(--rml-text-on-accent);
+}
+
+/* Superficies de marca: el texto encima usa el token propio, no el del botón. */
+.rml-surface-brand {
+  background: var(--rml-surface-brand);
+  color: var(--rml-text-on-surface-brand);
+}
