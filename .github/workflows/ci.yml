@@ -132,7 +132,7 @@ jobs:
 
       - name: Publicar la matriz espacial como artefacto
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: matriz-espacial
           path: docs/MATRIZ-ESPACIAL.md
@@ -168,7 +168,7 @@ jobs:
 
       - name: Publicar el informe de Playwright
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/
