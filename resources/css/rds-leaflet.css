@@ -157,3 +157,50 @@
 :root:not([data-theme='light']) .leaflet-tile-pane.rml-tiles-invert {
   filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
 }
+
+/* ---- Editor cartográfico (F1-B) ----------------------------------------
+   El lienzo del editor y los vértices que se arrastran. Los vértices se
+   dibujan con CSS y no con imágenes justamente para esto: cambian de color
+   con el tema sin recargar nada y sin un literal en el JavaScript. */
+
+.rml-editor-mapa {
+  height: 26rem;
+  border: 1px solid var(--rml-border);
+  border-radius: var(--rml-radius-md, 8px);
+  overflow: hidden;
+}
+
+/* Por debajo del mínimo de edición cartográfica el mapa necesita alto propio:
+   con el teclado abierto en móvil, 26rem no dejan ver el trazo (RNF-UI-001). */
+@media (max-width: 1023px) {
+  .rml-editor-mapa {
+    height: 20rem;
+  }
+}
+
+.rml-vertice {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: var(--rml-surface-card);
+  border: 2px solid var(--rml-accent);
+  box-shadow: var(--rml-shadow-sm);
+  cursor: grab;
+}
+
+/* El primero y el último de una línea, y el punto único, se distinguen: en un
+   recorrido largo importa saber de qué lado se está agregando. */
+.rml-vertice-extremo {
+  background: var(--rml-accent);
+  border-color: var(--rml-surface-card);
+}
+
+.rml-vertice:active {
+  cursor: grabbing;
+}
+
+.leaflet-marker-draggable.rml-vertice:focus-visible,
+.rml-vertice:focus-visible {
+  outline: none;
+  box-shadow: var(--rml-focus-ring);
+}

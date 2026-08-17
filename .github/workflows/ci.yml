@@ -85,6 +85,12 @@ jobs:
       - name: Contraste AA en los dos temas
         run: npm run rds:contraste
 
+      # La inversión de ejes no da ningún error: da un mapa que dibuja Ramallo en
+      # otro continente. La única defensa barata es que el orden se decida en un
+      # solo archivo, y esto lo verifica (ADR-003).
+      - name: Frontera de ejes en el cliente
+        run: npm run ejes:lint
+
       - name: Compilar assets
         run: npm run build
 
@@ -135,6 +141,20 @@ jobs:
       # --- E2E -------------------------------------------------------------
       - name: Instalar Chromium para Playwright
         run: npx playwright install --with-deps chromium
+
+      # Los cinco estados base son datos de SISTEMA (`is_system`, RF-OBR-008):
+      # cualquier instalación real los tiene desde el primer día. Un entorno E2E
+      # sin ellos no representa a ninguna instalación, y de hecho hacía fallar el
+      # alta de obras por un camino que en producción no existe.
+      - name: Sembrar el catálogo base para los E2E
+        env:
+          DB_CONNECTION: mariadb
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3308
+          DB_DATABASE: obras_test
+          DB_USERNAME: obras
+          DB_PASSWORD: secret
+        run: php artisan db:seed --class=CatalogoBaseSeeder --force
 
       - name: E2E (Playwright)
         env:

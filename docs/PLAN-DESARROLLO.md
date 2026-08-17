@@ -14,30 +14,41 @@ razonamiento de cada decisión está en [`ARQUITECTURA.md`](ARQUITECTURA.md).
 | **G2** — PoC espacial y matriz | ✅ **Cerrada en verde**. P3, P4, P6, P7 y P9 bloqueantes, todas verdes |
 | **F0** — Fundaciones | ✅ **Completada** |
 | **F1-A** — Datos, acceso y catálogos | ✅ **Completada** |
-| **G3** — Dataset del IGN recortado a Ramallo | ⛔ Pendiente. **Bloquea F1-B** |
+| **G3** — Dataset del IGN recortado a Ramallo | ✅ **Cerrada**. Recorte del WFS del IGN verificado y congelado por hash |
 | **G4** — Especificación del kiosco | ⛔ Pendiente. Bloquea la aceptación de F5 |
 | **G5** — Autorización escrita del RDS | ⛔ Pendiente. Bloquea la habilitación de la URL pública |
-| **F1-B** a **F7** | No iniciadas |
+| **F1-B** — Obras con geometría | ✅ **Completada** |
+| **F2** a **F7** | No iniciadas |
 
 ---
 
 ## Compuertas pendientes
 
-### G3 — Capa de departamentos del IGN (bloquea F1-B)
+### G3 — Capa de departamentos del IGN ✅
 
-Se necesita el archivo oficial recortado al partido de Ramallo, con: fecha de
-publicación, fecha de descarga, SRS de origen, transformación a EPSG:4326 y hash
-SHA-256. Se versiona en `database/geo/` y se **congela por versión**.
+Cerrada. El polígono del partido llegó del WFS oficial del IGN
+(`ign:departamento`, filtro `nam='Ramallo'`, `srsName=EPSG:4326`) y está
+congelado en `database/geo/`, con su manifiesto y su SHA-256.
 
-De ahí salen el centro y el zoom por omisión del mapa, el viewbox de sesgo para la
-geocodificación y las coordenadas de los fixtures.
+**Las coordenadas del proyecto ya son datos verificados.** De ahí salen el centro
+—el centroide, comprobado dentro del polígono—, el zoom de respaldo, el viewbox
+de sesgo para la geocodificación y el punto de los fixtures. Todo vive en
+`config/obras.php` bajo `mapa`, y `tests/Feature/Geo/RecorteIgnTest.php` verifica
+que esos valores sigan saliendo del archivo y no de la memoria de nadie.
 
-**Ninguna coordenada del proyecto es dato verificado todavía.** Las de los
-fixtures son del orden correcto y deliberadamente asimétricas para detectar
-inversiones de ejes, pero no representan ubicaciones reales.
+Lo que se midió contra MariaDB: SRID 4326, `MULTIPOLYGON` de un polígono sin
+huecos, 2.390 vértices, simple, anillo cerrado, punto interior contenido y ~1.046
+km² de superficie. La validez es **compuesta** porque `ST_IsValid` no existe en
+este motor (ADR-010).
 
-El entorno de desarrollo tiene bloqueado el egreso hacia `ign.gob.ar` y
-`datos.gob.ar` por política, así que el archivo tiene que llegar por otra vía.
+**Salvedad registrada:** el servicio del IGN no expone fecha de publicación del
+dataset. Queda anotada en el manifiesto en lugar de inventar un valor; la URL, el
+filtro, el momento de descarga y el hash alcanzan para reproducir y auditar el
+archivo.
+
+El egreso hacia `ign.gob.ar` sigue bloqueado en el entorno de desarrollo, así que
+la descarga se hace desde una máquina con red abierta con
+`scripts/obtener-recorte-ign.sh` y el resultado se versiona.
 
 ### G4 — Especificación del kiosco (bloquea la aceptación de F5)
 
@@ -83,11 +94,35 @@ pantallas del backoffice con los componentes de aplicación del RDS.
 `works` y `work_field_values` entraron **como esquema**: sin ellas, «está en uso»
 no se puede consultar y las reglas de catálogo no se pueden hacer cumplir.
 
-### F1-B — Obras con geometría (14–17 días-dev) ⛔ bloqueada por G3
+### F1-B — Obras con geometría (14–17 días-dev) ✅
 
 CRUD de obras con geometría manual · las tres columnas de fecha y
 `effective_end_date` materializada · concurrencia optimista · papelera lógica ·
 editores cartográficos. Todo lo que necesita coordenadas verificadas.
+
+Lo que quedó, y lo que costó decidir cada cosa:
+
+- **`WorkGeometry`** valida el GeoJSON contra el modo de la subcategoría y elige
+  el punto representativo. Para las líneas es **un vértice**, y no el punto medio,
+  porque el punto medio aritmético falla: sobre 200 segmentos medidos quedó
+  contenido en la línea sólo 54 veces, y un vértice las 200 (ADR-025).
+- **`WorkWriter`** hace el alta, la edición y la baja lógica en una sola
+  transacción con el código, la geometría y la auditoría adentro, y **le pregunta
+  a la base** si `ST_Contains(geometry, representative_point)` se cumple antes de
+  confirmar. La verificación es contra el motor, no contra la expectativa.
+- **Concurrencia optimista** con la comparación de `lock_version` en el `WHERE`
+  del `UPDATE`, nunca leyendo antes y comparando en PHP: entre la lectura y la
+  escritura pasan exactamente las dos ediciones que se quiere evitar.
+- **Editor cartográfico** sin plugin de terceros, con la conversión de ejes en un
+  único módulo (`resources/js/mapa/ejes.js`) y todos los colores leídos de tokens
+  del RDS en tiempo de ejecución.
+- **Sin proveedor de teselas todavía**, el editor usa de fondo el contorno oficial
+  del partido que dejó G3. Se dibuja igual; las calles aparecen cuando el
+  municipio active el servicio (dependencia externa de F3).
+
+**Fuera de F1-B, y a la vista:** la geocodificación de direcciones y el trazado
+asistido sobre calles son de F3, y los campos técnicos dinámicos en el formulario
+de obra son de F2.
 
 ### F2 — Fotos y campos dinámicos (10–12)
 
@@ -149,7 +184,7 @@ equipo de desarrollo:
 |---|---|---|
 | Dedicación | 5 días-dev por semana por desarrollador | Proporcional |
 | Respuesta de UAT | Observaciones en 5 días hábiles | Cada semana extra corre el calendario 1:1 |
-| Compuertas G3, G4, G5 | Insumos antes de necesitarlos | G3 bloquea F1-B; G5 bloquea la URL pública |
+| Compuertas G4 y G5 | Insumos antes de necesitarlos | G3 ya está cerrada; G5 bloquea la URL pública |
 | Proveedores | Cuentas de teselas y ORS activas antes de F3 | F3 y F4 a media máquina |
 | Coordinación | ~15 % de sobrecarga | Proporcional |
 

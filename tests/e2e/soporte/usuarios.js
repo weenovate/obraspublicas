@@ -28,7 +28,18 @@ export function asegurarAdmin (email, nombre = 'Administradora E2E') {
 
         // Ya existía de una corrida anterior: sirve igual, porque la contraseña
         // es la misma constante. Cualquier otra falla sí tiene que romper.
-        if (! salida.includes('ya está en uso')) throw error
+        if (salida.includes('ya está en uso')) return
+
+        // Y romper DICIENDO QUÉ PASÓ. `execFileSync` deja la salida del comando en
+        // `error.stdout`/`error.stderr` y no en el mensaje, así que relanzar el
+        // error pelado deja «Command failed: php artisan obras:crear-admin …» y
+        // nada más —que es exactamente lo que apareció en un flake de CI y no
+        // permitió diagnosticar nada—.
+        throw new Error(
+            `No se pudo crear el usuario ${email}.\n`
+            + `Salida del comando:\n${salida.trim() || '(vacía)'}`,
+            { cause: error }
+        )
     }
 }
 

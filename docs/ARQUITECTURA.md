@@ -89,6 +89,21 @@ intercambio rompe la aserción en vez de compensarse. Con valores simétricos
 (−33 y −33) un bug de ejes pasaría los tests, y el test daría una falsa seguridad
 peor que no tenerlo.
 
+**La misma frontera del lado del cliente (F1-B).** Leaflet usa `[lat, lng]`, así
+que el navegador necesita su propio adaptador: `resources/js/mapa/ejes.js`, único
+módulo autorizado a convertir. Lo verifica `scripts/ejes-lint.mjs` en la CI, y no
+es ceremonia —lo primero que encontró fueron dos cruces en el editor recién
+escrito, que se corrigieron moviendo las llamadas detrás de la frontera—.
+
+**Lo que NINGUNA de las dos fronteras puede atrapar, y conviene saberlo.** A la
+latitud de Ramallo, invertir los ejes da `[-33.5872, -60.0575]`, y **−60 es una
+latitud perfectamente válida**: cae en el pasaje de Drake. La verificación de
+rango no la distingue de un dato correcto. Lo único que la distingue es el
+territorio —el punto invertido cae fuera del partido—, y esa comprobación contra
+los límites municipales es de F3. Hasta entonces la brecha está documentada y
+tiene su test en `tests/Feature/Obras/GeometriaDeObraTest.php`, escrito para
+afirmar el límite en lugar de sugerir una protección que no existe.
+
 ---
 
 ## ADR-004 · Atomicidad de la auditoría (corrige la v2.2)
@@ -644,6 +659,109 @@ deja la redacción de los mensajes que ve el vecino en manos de un tercero. Los
 nombres de campo, además, se pasan por llamada: «contraseña temporal» y
 «contraseña» son cosas distintas para quien está mirando la pantalla, aunque el
 campo se llame igual en las dos.
+
+---
+
+## ADR-024 · El recorte del IGN se congela por versión y por hash
+
+**Contexto.** Centro y zoom del mapa, viewbox de la geocodificación y las
+coordenadas de los fixtures salen todos del mismo archivo: el polígono del
+partido publicado por el IGN. Es el insumo con más alcance del proyecto y el
+único que viene de afuera.
+
+**Decisión.** El archivo se versiona en `database/geo/` con su fecha en el
+nombre, su manifiesto y su SHA-256. Los valores derivados viven en
+`config/obras.php` y un test los recalcula contra el polígono en cada corrida. Un
+recorte nuevo es un archivo nuevo, nunca una edición en el lugar.
+
+**Por qué el hash y no sólo la URL.** El servicio devuelve lo que el IGN tenga
+publicado hoy; volver a pedirlo mañana puede dar un polígono distinto sin previo
+aviso. Con el hash, «el mapa se movió» deja de ser una discusión y pasa a ser una
+comparación.
+
+**Alternativa descartada: consultar el WFS en tiempo de ejecución.** Ata cada
+carga del mapa a que un servicio de terceros esté disponible, hace que el
+encuadre dependa del día, y convierte una actualización del IGN en un cambio no
+anunciado en producción. El dato oficial se trae una vez, se audita y se congela.
+
+**Consecuencia registrada.** El servicio no publica la fecha del dataset. Se
+documenta la ausencia en el manifiesto en lugar de anotar un valor plausible: la
+reproducibilidad la dan la URL, el filtro, el momento de descarga y el hash, y
+esos cuatro sí están completos.
+
+**El centro es el centroide, no `ST_PointOnSurface`.** En este polígono el
+segundo devuelve un punto apoyado sobre el borde sur: contenido, pero pésimo
+centro de mapa. Para la geometría de cada obra sigue mandando
+`ST_PointOnSurface` (ADR-009), donde lo que hace falta es un punto garantizado
+dentro de figuras que pueden ser cóncavas, no uno estéticamente centrado.
+
+---
+
+## ADR-025 · El punto representativo de una línea es un vértice suyo (resuelto por medición)
+
+**El problema.** ADR-009 resolvió el punto interior con `ST_PointOnSurface`, y la
+medición de G2 lo validó **para polígonos**. Para las líneas no sirve: en MariaDB
+10.11.18 `ST_PointOnSurface` y `ST_Centroid` devuelven **NULL** sobre
+`LINESTRING`. El motor no puede darlo, así que hay que elegirlo en la aplicación.
+
+**La opción obvia estaba mal.** El punto medio aritmético de un segmento parece
+trivialmente contenido en él. Se midió sobre 200 segmentos: quedó contenido
+**54 veces de 200**. Un vértice, en las 200. Y en los casos que fallan, el motor
+llega a contradecirse consigo mismo —para
+`LINESTRING(-60.08 -33.50,-60.06 -33.45)` y su punto medio `POINT(-60.07 -33.475)`,
+`ST_Distance` devuelve exactamente **0** y `ST_Contains` e `ST_Intersects`
+devuelven **falso**—.
+
+La causa es que la división por dos redondea en binario, y el punto que resulta no
+coincide con ninguno de los que el predicado reconoce sobre el segmento. Lo
+importante no es que falle siempre: es que **falla a veces**. Un invariante que se
+cumple el 27 % de las veces no es un invariante, y un fixture afortunado lo habría
+dado por bueno —de hecho, la primera versión de este test usaba un solo segmento y
+concluía lo contrario—.
+
+**Decisión.** Para una línea, el punto representativo es **el vértice más cercano a
+la mitad del recorrido**. Un vértice es exactamente el mismo `double` que ya está
+almacenado en la geometría, y `ST_Contains` lo acepta —incluidos los extremos, que
+en este motor también dan verdadero, medido—.
+
+La mitad se calcula sobre la **longitud geodésica acumulada**, no sobre la cantidad
+de vértices: una línea con veinte puntos juntos en una esquina y dos en el resto
+tiene su vértice «del medio» por índice en la esquina, que no es la mitad de nada.
+
+**Lo que no cambia.** El polígono sigue con `ST_PointOnSurface` (ADR-009) y el
+punto sigue siendo el punto. Y el invariante sigue verificándose **contra la base**
+antes de confirmar, en `WorkWriter`: acá se elige un candidato con fundamento, allá
+se comprueba que efectivamente lo cumple. Elegirlo bien no exime de verificarlo.
+
+---
+
+## ADR-026 · La versión se compara en el `WHERE`, no antes
+
+**El problema.** Dos personas editan la misma obra. Sin ninguna guarda, la segunda
+en guardar pisa a la primera y nadie se entera: no hay error, no hay conflicto, hay
+un dato que desapareció.
+
+**Lo que parece la solución y no lo es.** Leer `lock_version`, compararla en PHP con
+la que trajo el formulario y actualizar si coinciden. Entre la lectura y la
+escritura hay una ventana, y por esa ventana pasan exactamente las dos ediciones
+simultáneas que se quería evitar: las dos leen la misma versión, las dos la
+consideran válida, las dos escriben.
+
+**Decisión.** La comparación viaja en la misma sentencia que el `UPDATE`:
+
+```sql
+UPDATE works SET …, lock_version = ? WHERE id = ? AND lock_version = ? AND deleted_at IS NULL
+```
+
+Lo que decide es **la cantidad de filas afectadas**. Cero significa que la fila
+cambió, o se fue a la papelera, y se distingue una cosa de la otra releyendo
+después —ahí sí sin carrera, porque ya no hay nada que escribir—.
+
+**La respuesta es un error de validación, no un 409.** HTTP sería más preciso, pero
+Inertia trataría el 409 como un error de página y perdería lo que la persona
+escribió. Un error de validación devuelve el formulario intacto con el aviso
+arriba, que es lo que hace falta para que nadie pierda su trabajo por avisar de un
+conflicto.
 
 ---
 

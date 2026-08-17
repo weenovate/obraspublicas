@@ -16,6 +16,8 @@ test.use({ reducedMotion: 'reduce' })
 
 const PANTALLAS = [
     ['/admin', 'Inicio'],
+    ['/obras', 'Obras'],
+    ['/obras/nueva', 'Nueva obra'],
     ['/admin/usuarios', 'Usuarios'],
     ['/admin/categorias', 'Categorías'],
     ['/admin/subcategorias', 'Subcategorías'],

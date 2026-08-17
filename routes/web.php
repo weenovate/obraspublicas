@@ -9,7 +9,9 @@ use App\Http\Controllers\Admin\StatusController;
 use App\Http\Controllers\Admin\SubcategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BoundaryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WorkController;
 use App\Policies\AdminPolicy;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -49,6 +51,22 @@ Route::middleware(['auth', 'sesion.activa'])->group(function (): void {
 
         Route::get('/perfil', [ProfileController::class, 'edit'])->name('perfil.edit');
         Route::put('/perfil', [ProfileController::class, 'update'])->name('perfil.update');
+
+        // ---- Obras: los dos roles (matriz de permisos, spec 2.2) ----
+        //
+        // Sin `can:`: crear y editar obras es precisamente lo que hace el rol
+        // Obras Públicas. Lo exclusivo del Admin —restaurar y eliminar
+        // definitivamente— es F6 y llega con su propia política.
+
+        Route::get('/obras', [WorkController::class, 'index'])->name('obras.index');
+        Route::get('/obras/nueva', [WorkController::class, 'create'])->name('obras.create');
+        Route::post('/obras', [WorkController::class, 'store'])->name('obras.store');
+        Route::get('/obras/{work}/editar', [WorkController::class, 'edit'])->name('obras.edit');
+        Route::put('/obras/{work}', [WorkController::class, 'update'])->name('obras.update');
+        Route::delete('/obras/{work}', [WorkController::class, 'destroy'])->name('obras.destroy');
+
+        // El contorno del partido que el editor usa de fondo.
+        Route::get('/mapa/partido.geojson', BoundaryController::class)->name('mapa.partido');
 
         // ---- Sólo Administrador (matriz de permisos, spec 2.2) ----
 

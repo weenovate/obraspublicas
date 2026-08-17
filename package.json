@@ -8,7 +8,8 @@
         "rds:contraste": "node scripts/rds-contraste.mjs",
         "rds:lint": "node scripts/rds-lint.mjs",
         "rds:fuentes": "node scripts/rds-fuentes.mjs",
-        "rds:verificar": "npm run rds:lint && npm run rds:contraste",
+        "ejes:lint": "node scripts/ejes-lint.mjs",
+        "rds:verificar": "npm run rds:lint && npm run rds:contraste && npm run ejes:lint",
         "e2e": "playwright test"
     },
     "devDependencies": {
