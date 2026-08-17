@@ -153,6 +153,32 @@ function contrastRatio(a, b) {
 }
 
 // ---------------------------------------------------------------------------
+// Modo «par suelto»
+// ---------------------------------------------------------------------------
+//
+// `node scripts/rds-contraste.mjs --par '#75C932' '#161A14'` imprime sólo la
+// relación entre esos dos colores y termina, sin mirar ningún token.
+//
+// Existe para que el test de paridad pueda comparar ESTA implementación con la
+// de `App\Support\Color\ContrastRatio`. La alternativa —copiar la fórmula al
+// test— compararía la copia contra sí misma y no detectaría nada.
+
+const parIndex = process.argv.indexOf('--par');
+
+if (parIndex !== -1) {
+  const fg = parseColor(process.argv[parIndex + 1]);
+  const bg = parseColor(process.argv[parIndex + 2]);
+
+  if (!fg || !bg) {
+    console.error('Uso: rds-contraste.mjs --par <color> <color>');
+    process.exit(2);
+  }
+
+  console.log(contrastRatio(fg, bg).toFixed(10));
+  process.exit(0);
+}
+
+// ---------------------------------------------------------------------------
 // Pares a verificar
 // ---------------------------------------------------------------------------
 

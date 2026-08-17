@@ -22,3 +22,11 @@ pest()->extend(TestCase::class)
     ->in('Feature');
 
 pest()->extend(TestCase::class)->in('Arch');
+
+/*
+| Los tests unitarios corren sin base de datos y en general sin aplicación. La
+| excepción son los de `Unit/Work`, que necesitan el contenedor para sustituir la
+| fachada `DB`: verifican una guarda que `RefreshDatabase` haría inobservable en
+| `Feature`, porque allá siempre hay una transacción abierta.
+*/
+pest()->extend(TestCase::class)->in('Unit/Work');
