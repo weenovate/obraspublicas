@@ -7,17 +7,20 @@
     para quien usa tema oscuro, y en una pantalla de exhibición que arranca sola
     ese destello se ve en cada reinicio.
 
-    Tres estados (ver resources/js/theme.js): con sesión manda `theme_preference`
-    del usuario (RF-CFG-004); sin sesión, el atributo se omite y decide el
-    dispositivo (RF-THE-001).
+    En el backoffice el atributo va SIEMPRE: manda la preferencia del usuario y,
+    si no eligió, el tema predeterminado configurable (RF-CFG-004/005). La Web
+    pública de F4 se renderiza sin atributo, y ahí sí decide el dispositivo
+    (RF-THE-001).
 --}}
 @php
-    $theme = $theme ?? optional(auth()->user())->theme_preference ?? 'system';
+    // Tema EFECTIVO, no la preferencia cruda: si el usuario no eligió, manda el
+    // predeterminado de la configuración (RF-CFG-005).
+    //
+    // `null` significa que esta ruta sigue al dispositivo, y entonces el atributo
+    // NO va: ponerlo vacío no es lo mismo que no ponerlo. Ver `stampedThemeFor()`.
+    $theme = \App\Http\Middleware\HandleInertiaRequests::stampedThemeFor(request());
 @endphp
-<html
-    lang="es-AR"
-    @if ($theme === 'light' || $theme === 'dark') data-theme="{{ $theme }}" @endif
->
+<html lang="es-AR" @if ($theme !== null) data-theme="{{ $theme }}" @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

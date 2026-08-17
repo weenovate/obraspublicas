@@ -1,5 +1,5 @@
 import { createApp, h } from 'vue'
-import { createInertiaApp } from '@inertiajs/vue3'
+import { createInertiaApp, router } from '@inertiajs/vue3'
 import { applyTheme, storedTheme } from './theme'
 
 // El backend estampa `data-theme` antes de la primera pintura para el
@@ -12,6 +12,28 @@ if (! document.documentElement.hasAttribute('data-theme')) {
 // Recién con la primera pintura hecha se habilitan las transiciones de tema: así
 // el cambio manual se ve suave y la carga inicial no hace un desvanecido.
 requestAnimationFrame(() => document.body.classList.add('rml-theme-transitions'))
+
+/*
+ * El tema del backoffice sigue a la cuenta en CADA visita, no sólo en la carga
+ * completa (RF-CFG-004/005, CA-025).
+ *
+ * Hace falta porque Inertia no recarga el documento: al ingresar reemplaza el
+ * componente sobre el mismo `<html>`, que sigue con el atributo que estampó la
+ * pantalla de ingreso —donde todavía no había usuario—. Sin esto, quien eligió
+ * oscuro entra y ve claro hasta la próxima navegación completa.
+ *
+ * Vive acá y no en un layout a propósito: el tema es del documento, y atarlo a
+ * un componente haría que cualquier página fuera de ese layout lo pierda.
+ *
+ * El evento es `success` y no `navigate` porque también tiene que cubrir las
+ * recargas parciales —el perfil pide sólo `auth` y `theme` al guardar—, que no
+ * cambian de página y por lo tanto no navegan.
+ */
+router.on('success', (evento) => {
+    const tema = evento.detail?.page?.props?.theme?.efectivo
+
+    if (tema) applyTheme(tema)
+})
 
 const appName = import.meta.env.VITE_APP_NAME ?? 'Obras Públicas Ramallo'
 
