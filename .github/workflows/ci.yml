@@ -1,8 +1,11 @@
 name: CI
 
+# `push` sólo en `main`, y `pull_request` para el resto. Con `push` en todas las
+# ramas, cada commit de una rama con PR abierto disparaba DOS corridas idénticas:
+# el doble de minutos y el doble de ruido de rojos y verdes sobre el mismo commit.
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
 
 concurrency:
@@ -97,18 +100,29 @@ jobs:
           DB_DATABASE: obras_test
           DB_USERNAME: obras
           DB_PASSWORD: secret
-        run: |
-          php artisan migrate --force
-          php artisan migrate --path=poc/migrations --force
+        run: php artisan migrate --force
 
       - name: Suite (Pest)
         run: ./vendor/bin/pest
 
+      # La migración de P3 va acá y no en el paso de migraciones: la suite corre
+      # con `RefreshDatabase`, que borra la base y re-migra sólo
+      # `database/migrations`, así que se lleva `poc_p3_geometrias` y la sonda no
+      # encontraría la tabla que tiene que inspeccionar. La precondición se
+      # establece donde se usa, y así el paso queda independiente del orden.
       - name: Sondas espaciales de G2
         env:
+          DB_CONNECTION: mariadb
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3308
+          DB_DATABASE: obras_test
+          DB_USERNAME: obras
+          DB_PASSWORD: secret
           POC_DB_PORT: 3308
           POC_DB_DATABASE: obras_test
-        run: php poc/sonda.php
+        run: |
+          php artisan migrate --path=poc/migrations --force
+          php poc/sonda.php
 
       - name: Publicar la matriz espacial como artefacto
         if: always()
