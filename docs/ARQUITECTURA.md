@@ -566,6 +566,87 @@ sobre producción, y da una confianza que no corresponde.
 
 ---
 
+## ADR-021 · La preferencia de tema se alinea con el spec: dos valores y un respaldo configurable
+
+**Contexto.** F0 implementó `users.theme_preference` como
+`enum('light','dark','system')` con `system` por omisión, donde `system` sigue al
+dispositivo. El spec dice otra cosa: RF-CFG-004 define LIGHT o DARK, y RF-CFG-005
+dice que si la preferencia falta se usa **el tema predeterminado configurado**, que
+es un valor de `app_settings`, no el del sistema operativo del usuario.
+
+**Decisión.** `theme_preference` pasa a `enum('light','dark')` **nullable**, sin
+valor por omisión. Vacío significa «no eligió», y entonces manda
+`app_settings.default_theme`. Los usuarios existentes reciben `light` en la
+migración, que es lo que RF-CFG-005 pide. La Web pública **conserva** el
+seguimiento del dispositivo: eso es RF-THE-001 y no estaba en discusión.
+
+**Alternativa descartada: dejar `system` y tratarlo como el respaldo.** Parece
+inofensivo y ahorra una migración, pero borra una distinción que el spec necesita.
+Con `system`, la Municipalidad no puede fijar el tema con el que se ve el sistema:
+cada pantalla haría lo que dijera su sistema operativo, y la opción de
+configuración quedaría sin efecto para todos los que nunca tocaron su perfil —que
+son la mayoría—. Peor: no habría forma de distinguir «quiero seguir al
+dispositivo» de «no elegí nada», y esas dos cosas necesitan respuestas distintas.
+
+**Consecuencia operativa.** El backoffice estampa `data-theme` **siempre**, y las
+superficies que siguen al dispositivo se declaran por nombre de ruta en
+`HandleInertiaRequests::RUTAS_SIN_TEMA_ESTAMPADO`. Hoy hay una —la página de
+referencia del RDS, que existe justamente para revisar los tres estados—; en F4 se
+suman las rutas de la Web pública. `null` ahí significa **ausencia del atributo**,
+no tema claro: con `data-theme=""` el selector del tema oscuro por preferencia del
+dispositivo dejaría de aplicar.
+
+---
+
+## ADR-022 · Auditar una denegación exige sacar `AuthorizationException` de la lista de ignorados
+
+**Contexto.** CA-014 pide que todo intento denegado quede registrado. El registro
+se engancha en el manejador de excepciones y no en un middleware porque una
+denegación puede saltar en cualquier punto: un `Gate::authorize()` en el
+controlador, una policy en un form request, un `can:` en la ruta. Un middleware
+sólo vería el último caso.
+
+**El detalle que costó un test.** Laravel ignora `AuthorizationException` de
+fábrica: está en `$internalDontReport`, junto con `ValidationException` y
+`HttpException`. Con la excepción ignorada, `report()` retorna antes de ejecutar
+ningún callback, así que el registro **nunca se ejecutaba** y la única señal era un
+test rojo. Hacen falta dos pasos: `stopIgnoring(AuthorizationException::class)`
+para que llegue al manejador, y `->stop()` en el callback para que después de
+auditarla no se la mande también al log de errores —un 403 es un evento de
+seguridad, no una falla de la aplicación—.
+
+**Por qué el callback está tipado y no toma `Throwable`.** Porque `->stop()` corta
+el reporte de todo lo que el callback maneje. Con `Throwable`, ese `stop()`
+silenciaría el log de **todas** las excepciones de la aplicación, incluidos los
+errores reales. El tipo del primer parámetro es lo que delimita el alcance.
+
+**Qué NO se registra.** La ruta, el método, el nombre de ruta y el actor. Nunca el
+cuerpo, la cadena de consulta ni la respuesta: una bitácora que copia lo que el
+usuario no tenía permiso de ver convierte el registro de seguridad en la filtración
+que quería evitar. Hay un test que lo verifica con datos reconocibles.
+
+---
+
+## ADR-023 · Los mensajes del framework se traducen en el repositorio, no se dejan al idioma por omisión
+
+**Contexto.** La aplicación corre con `APP_LOCALE=es`, y Laravel sólo trae el juego
+de mensajes de validación en inglés. Sin un `lang/es/`, el traductor no encuentra
+la clave y devuelve **la clave misma**: el usuario ve `validation.required` en el
+formulario de alta de usuarios.
+
+**Decisión.** `lang/es/validation.php`, `auth.php`, `passwords.php` y
+`pagination.php` versionados, con un test que envía un formulario inválido y falla
+si algún mensaje contiene `validation.`.
+
+**Alternativa descartada: traer un paquete de traducciones.** Agrega una dependencia
+—y su cadena de actualizaciones— para cuatro archivos de texto que no cambian, y
+deja la redacción de los mensajes que ve el vecino en manos de un tercero. Los
+nombres de campo, además, se pasan por llamada: «contraseña temporal» y
+«contraseña» son cosas distintas para quien está mirando la pantalla, aunque el
+campo se llame igual en las dos.
+
+---
+
 ## Notas del entorno de construcción
 
 Dos limitaciones del entorno donde se ejecutó esta iteración, que **no** afectan al
