@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Calidad, tests y auditoría
+    runs-on: ubuntu-latest
+
+    services:
+      # La misma versión que producción, no «una MariaDB cualquiera»: parte de la
+      # matriz espacial depende de qué funciones trae este build (compuerta G1).
+      mariadb:
+        image: mariadb:10.11.18
+        env:
+          MARIADB_ROOT_PASSWORD: secret
+          MARIADB_DATABASE: obras_test
+          MARIADB_USER: obras
+          MARIADB_PASSWORD: secret
+        ports:
+          - 3308:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # Sin imagick: el entorno de producción no lo tiene, así que la CI
+          # tampoco. Intervention Image corre sobre GD.
+          extensions: gd, exif, fileinfo, pdo_mysql, intl, zip
+          coverage: none
+
+      - name: Configurar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Cachear dependencias de Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Instalar dependencias JS
+        run: npm ci
+
+      - name: Preparar entorno
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # --- Calidad estática ------------------------------------------------
+      - name: Formato (Pint)
+        run: ./vendor/bin/pint --test
+
+      - name: Análisis estático (Larastan)
+        run: ./vendor/bin/phpstan analyse --no-progress
+
+      # --- Disciplina del sistema de diseño --------------------------------
+      - name: Lint de tokens del RDS
+        run: npm run rds:lint
+
+      - name: Contraste AA en los dos temas
+        run: npm run rds:contraste
+
+      - name: Compilar assets
+        run: npm run build
+
+      - name: Tipografías emitidas y sin URLs rotas
+        run: npm run rds:fuentes
+
+      # --- Tests -----------------------------------------------------------
+      - name: Migraciones
+        env:
+          DB_CONNECTION: mariadb
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3308
+          DB_DATABASE: obras_test
+          DB_USERNAME: obras
+          DB_PASSWORD: secret
+        run: |
+          php artisan migrate --force
+          php artisan migrate --path=poc/migrations --force
+
+      - name: Suite (Pest)
+        run: ./vendor/bin/pest
+
+      - name: Sondas espaciales de G2
+        env:
+          POC_DB_PORT: 3308
+          POC_DB_DATABASE: obras_test
+        run: php poc/sonda.php
+
+      - name: Publicar la matriz espacial como artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matriz-espacial
+          path: docs/MATRIZ-ESPACIAL.md
+          if-no-files-found: warn
+
+      # --- E2E -------------------------------------------------------------
+      - name: Instalar Chromium para Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (Playwright)
+        env:
+          DB_CONNECTION: mariadb
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3308
+          DB_DATABASE: obras_test
+          DB_USERNAME: obras
+          DB_PASSWORD: secret
+        run: npx playwright test
+
+      - name: Publicar el informe de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  auditoria:
+    name: Auditoría de dependencias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: npm ci
+
+      # Bloqueantes por decisión: una vulnerabilidad alta no espera a la próxima
+      # revisión manual.
+      - name: composer audit
+        run: composer audit
+
+      - name: npm audit
+        run: npm audit --audit-level=high

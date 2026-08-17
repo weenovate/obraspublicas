@@ -4,7 +4,12 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "rds:contraste": "node scripts/rds-contraste.mjs",
+        "rds:lint": "node scripts/rds-lint.mjs",
+        "rds:fuentes": "node scripts/rds-fuentes.mjs",
+        "rds:verificar": "npm run rds:lint && npm run rds:contraste",
+        "e2e": "playwright test"
     },
     "devDependencies": {
         "@playwright/test": "^1.62.1",
