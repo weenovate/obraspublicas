@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
 use App\Models\Work;
 use App\Models\WorkFieldDefinition;
 use App\Models\WorkFieldOption;
 use App\Models\WorkFieldValue;
+use App\Models\WorkStatus;
 use App\Models\WorkSubcategory;
 use App\Support\Fields\FieldRuleViolation;
 use App\Support\Fields\WorkFieldSet;
 use App\Support\Fields\WorkFieldValueWriter;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /*
@@ -117,7 +120,7 @@ it('guarda cada tipo en su columna y deja las demás vacías', function (string 
 
     if ($esperado !== null) {
         $valor = $fila->getAttribute($columna);
-        expect($valor instanceof \Illuminate\Support\Carbon ? $valor->toDateString() : $valor)->toEqual($esperado);
+        expect($valor instanceof Carbon ? $valor->toDateString() : $valor)->toEqual($esperado);
     }
 
     // Exactamente UNA columna tipada tiene valor: es la regla de la spec 9.3.
@@ -330,9 +333,9 @@ it('guarda el falso de un booleano en lugar de tratarlo como vacío', function (
 */
 
 it('guarda los valores al crear la obra, y los devuelve al editarla', function () {
-    $usuario = App\Models\User::factory()->create(['role' => 'OBRAS_PUBLICAS', 'must_change_password' => false]);
+    $usuario = User::factory()->create(['role' => 'OBRAS_PUBLICAS', 'must_change_password' => false]);
     $sub = WorkSubcategory::factory()->create(['geometry_mode' => WorkSubcategory::MODE_POINT, 'is_active' => true]);
-    $estado = App\Models\WorkStatus::factory()->create(['key' => 'IN_PROGRESS', 'is_final' => false, 'is_active' => true]);
+    $estado = WorkStatus::factory()->create(['key' => 'IN_PROGRESS', 'is_final' => false, 'is_active' => true]);
 
     $ancho = definirCampo(WorkFieldDefinition::SCOPE_SUBCATEGORY, $sub->getKey(), 'ancho', [
         'data_type' => WorkFieldDefinition::TYPE_DECIMAL, 'unit' => 'm', 'min_value' => 1, 'max_value' => 20,
@@ -362,9 +365,9 @@ it('guarda los valores al crear la obra, y los devuelve al editarla', function (
 });
 
 it('devuelve el error del campo como error de formulario, no como 500', function () {
-    $usuario = App\Models\User::factory()->create(['role' => 'OBRAS_PUBLICAS', 'must_change_password' => false]);
+    $usuario = User::factory()->create(['role' => 'OBRAS_PUBLICAS', 'must_change_password' => false]);
     $sub = WorkSubcategory::factory()->create(['geometry_mode' => WorkSubcategory::MODE_POINT, 'is_active' => true]);
-    $estado = App\Models\WorkStatus::factory()->create(['key' => 'IN_PROGRESS', 'is_final' => false, 'is_active' => true]);
+    $estado = WorkStatus::factory()->create(['key' => 'IN_PROGRESS', 'is_final' => false, 'is_active' => true]);
 
     $ancho = definirCampo(WorkFieldDefinition::SCOPE_SUBCATEGORY, $sub->getKey(), 'ancho', [
         'data_type' => WorkFieldDefinition::TYPE_INTEGER, 'max_value' => 10,
@@ -389,7 +392,7 @@ it('muestra los campos de la subcategoría preseleccionada en la primera carga',
     // servidor no hiciera lo mismo, la primera carga diría «esta subcategoría no
     // tiene campos» aunque los tenga, y sólo aparecerían al cambiar el
     // desplegable y volver.
-    $usuario = App\Models\User::factory()->create(['role' => 'OBRAS_PUBLICAS', 'must_change_password' => false]);
+    $usuario = User::factory()->create(['role' => 'OBRAS_PUBLICAS', 'must_change_password' => false]);
     $sub = WorkSubcategory::factory()->create(['geometry_mode' => WorkSubcategory::MODE_POINT, 'is_active' => true]);
 
     definirCampo(WorkFieldDefinition::SCOPE_SUBCATEGORY, $sub->getKey(), 'ancho');

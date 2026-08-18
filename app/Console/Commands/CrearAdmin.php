@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Models\User;
 use App\Support\Users\UserManager;
 use Illuminate\Console\Command;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -63,12 +64,27 @@ final class CrearAdmin extends Command
             return self::FAILURE;
         }
 
-        $user = $users->create(
-            name: $name,
-            email: $email,
-            role: User::ROLE_ADMIN,
-            temporaryPassword: $password,
-        );
+        // La validación `unique` de arriba comprueba y después inserta, y entre
+        // las dos cosas hay una ventana. Dos ejecuciones simultáneas del comando
+        // —dos procesos de un arnés en paralelo, o dos personas a la vez— pasan
+        // las dos la comprobación y la segunda choca contra el índice único.
+        //
+        // Quien cierra la carrera es el índice, no la validación; acá sólo se
+        // traduce el choque al mismo mensaje que ya da la validación. Sin esto,
+        // el comando muere con un `SQLSTATE` y una traza en pantalla por algo
+        // que tiene una explicación de una línea.
+        try {
+            $user = $users->create(
+                name: $name,
+                email: $email,
+                role: User::ROLE_ADMIN,
+                temporaryPassword: $password,
+            );
+        } catch (UniqueConstraintViolationException) {
+            $this->components->error('El campo correo electrónico ya está en uso.');
+
+            return self::FAILURE;
+        }
 
         // Si no se pidió temporal, la contraseña es definitiva: quien corrió el
         // comando la eligió, no hay nadie más que la conozca.

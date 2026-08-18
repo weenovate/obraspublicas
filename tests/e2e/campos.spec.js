@@ -52,14 +52,27 @@ async function prepararCatalogo (page, sufijo) {
         ['Observaciones', 'LONG_TEXT'],
         ['Iluminacion', 'BOOLEAN'],
     ]) {
-        if (await page.getByRole('cell', { name: etiqueta, exact: true }).count() > 0) continue
+        // La comprobación va sobre la FILA de esta subcategoría, no sobre la
+        // etiqueta suelta: los seis proyectos corren en paralelo contra la misma
+        // base y todos crean un campo «Ancho», cada uno para su subcategoría. Un
+        // `getByRole('cell')` a secas encuentra el de otro proyecto, saltea la
+        // creación, y la subcategoría de este queda sin campos.
+        const yaEsta = await page.getByRole('row')
+            .filter({ has: page.getByRole('cell', { name: etiqueta, exact: true }) })
+            .filter({ has: page.getByRole('cell', { name: subcategoria, exact: true }) })
+            .count()
+
+        if (yaEsta > 0) continue
 
         await page.getByLabel('Se aplica a').selectOption('SUBCATEGORY')
         await page.getByLabel('Subcategoría', { exact: true }).selectOption({ label: subcategoria })
         await page.getByLabel('Etiqueta').fill(etiqueta)
         await page.getByLabel('Tipo de dato').selectOption(tipo)
         await page.getByRole('button', { name: 'Crear campo' }).click()
-        await expect(page.getByRole('cell', { name: etiqueta, exact: true })).toBeVisible()
+        await expect(page.getByRole('row')
+            .filter({ has: page.getByRole('cell', { name: etiqueta, exact: true }) })
+            .filter({ has: page.getByRole('cell', { name: subcategoria, exact: true }) }))
+            .toBeVisible()
     }
 
     return { categoria, subcategoria }
