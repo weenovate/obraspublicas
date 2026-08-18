@@ -130,6 +130,7 @@ tests/
 | [`DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) | Procedencia del RDS, contraste medido, extensiones, compuerta G5 |
 | [`MODELO-DATOS.md`](docs/MODELO-DATOS.md) | Las 13 entidades y sus invariantes |
 | [`INFRAESTRUCTURA.md`](docs/INFRAESTRUCTURA.md) | Servicios, responsables, costos y tareas recurrentes |
+| [`INSTALACION-VPS.md`](docs/INSTALACION-VPS.md) | Instalación desde cero en un VPS AlmaLinux 9 + cPanel/WHM |
 | [`DEPLOY-CPANEL.md`](docs/DEPLOY-CPANEL.md) | Runbook de despliegue, backups y restauración |
 | [`BACKLOG.md`](docs/BACKLOG.md) | Trazabilidad RF/CA → tarea → fase → estado |
 

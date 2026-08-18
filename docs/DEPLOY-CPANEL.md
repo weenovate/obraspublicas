@@ -1,5 +1,10 @@
 # Runbook de despliegue — cPanel / AlmaLinux
 
+Este documento cubre el despliegue **recurrente**, con la estructura de releases ya
+armada. Para la **primera instalación** en un servidor nuevo —verificaciones de WHM,
+creación de la base, `.env` de producción, primer Administrador— está
+[`INSTALACION-VPS.md`](INSTALACION-VPS.md).
+
 ## Estructura de releases
 
 ```
