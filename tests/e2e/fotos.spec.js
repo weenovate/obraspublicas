@@ -110,10 +110,20 @@ test('se sube una foto, se procesa y aparece en la galería', async ({ page }, t
     await expect(miniatura).toBeVisible()
     await expect(miniatura).toHaveAttribute('src', /signature=/)
 
-    // Y la imagen carga: un `src` firmado que devuelva 403 se vería igual de
+    // Y la imagen CARGA: un `src` firmado que devuelva 403 se vería igual de
     // bien en el DOM y estaría roto en pantalla.
-    const cargo = await miniatura.evaluate((img) => img.complete && img.naturalWidth > 0)
-    expect(cargo).toBe(true)
+    //
+    // Hay que traerla a la vista y esperar. La miniatura lleva `loading="lazy"`,
+    // así que en un viewport angosto queda debajo del pliegue y el navegador no
+    // la descarga hasta que se acerca —`toBeVisible` no alcanza, porque el
+    // elemento está en el DOM y visible sin haber cargado el archivo—. Sin esto
+    // el caso pasa en escritorio y falla en móvil, que fue exactamente lo que
+    // ocurrió.
+    await miniatura.scrollIntoViewIfNeeded()
+    await expect
+        .poll(() => miniatura.evaluate((img) => img.complete && img.naturalWidth > 0),
+            { message: 'la miniatura nunca terminó de cargar' })
+        .toBe(true)
 })
 
 test('la foto se puede quitar de la obra', async ({ page }, testInfo) => {
