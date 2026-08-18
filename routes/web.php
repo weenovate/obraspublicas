@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BoundaryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkController;
+use App\Http\Controllers\WorkPhotoController;
 use App\Policies\AdminPolicy;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -65,6 +66,11 @@ Route::middleware(['auth', 'sesion.activa'])->group(function (): void {
         Route::put('/obras/{work}', [WorkController::class, 'update'])->name('obras.update');
         Route::delete('/obras/{work}', [WorkController::class, 'destroy'])->name('obras.destroy');
 
+        // ---- Fotografías de una obra (F2) ----
+        Route::post('/obras/{work}/fotos', [WorkPhotoController::class, 'store'])->name('obras.fotos.store');
+        Route::post('/fotos/{photo}/reintentar', [WorkPhotoController::class, 'retry'])->name('fotos.reintentar');
+        Route::delete('/fotos/{photo}', [WorkPhotoController::class, 'destroy'])->name('fotos.destroy');
+
         // El contorno del partido que el editor usa de fondo.
         Route::get('/mapa/partido.geojson', BoundaryController::class)->name('mapa.partido');
 
@@ -109,6 +115,21 @@ Route::middleware(['auth', 'sesion.activa'])->group(function (): void {
         });
     });
 });
+
+/*
+| Entrega de fotografías.
+|
+| Fuera del grupo de sesión A PROPÓSITO: lo que autoriza es la FIRMA de la URL,
+| no la cookie. Así la misma ruta sirve al backoffice hoy y a la web pública de
+| F4, donde no hay sesión, sin abrir el directorio de archivos por HTTP.
+|
+| `signed` rechaza cualquier URL que no venga firmada por la aplicación, con lo
+| que el identificador deja de ser adivinable cambiando un número.
+*/
+Route::get('/fotos/{photo}/{tamano}', [WorkPhotoController::class, 'show'])
+    ->middleware('signed')
+    ->whereIn('tamano', ['large', 'thumb'])
+    ->name('fotos.ver');
 
 /*
 | Página de referencia del RDS: herramienta de revisión visual interna, no una
