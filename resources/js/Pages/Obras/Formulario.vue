@@ -19,13 +19,14 @@
  * llenar un formulario para después rechazarlo.
  */
 import { computed, ref, watch } from 'vue'
-import { Link, useForm } from '@inertiajs/vue3'
+import { Link, router, useForm } from '@inertiajs/vue3'
 import AdminLayout from '../../Layouts/AdminLayout.vue'
 import RmlCard from '../../Components/rds/RmlCard.vue'
 import RmlButton from '../../Components/rds/RmlButton.vue'
 import RmlAlert from '../../Components/rds/RmlAlert.vue'
 import EditorGeometria from '../../Components/mapa/EditorGeometria.vue'
 import GaleriaDeFotos from '../../Components/fotos/GaleriaDeFotos.vue'
+import CamposTecnicos from '../../Components/campos/CamposTecnicos.vue'
 
 const props = defineProps({
     obra: { type: Object, default: null },
@@ -34,6 +35,8 @@ const props = defineProps({
     mapa: { type: Object, required: true },
     fotos: { type: Array, default: () => [] },
     maxFotos: { type: Number, default: 10 },
+    campos: { type: Array, default: () => [] },
+    faltantes: { type: Array, default: () => [] },
 })
 
 const editando = computed(() => props.obra !== null)
@@ -51,6 +54,7 @@ const form = useForm({
     locality: props.obra?.locality ?? '',
     geometria: props.obra?.geometria ?? null,
     lock_version: props.obra?.lock_version ?? 0,
+    campos: {},
 })
 
 const confirmandoBaja = ref(false)
@@ -66,6 +70,29 @@ const estadoElegido = computed(
 )
 
 const finaliza = computed(() => estadoElegido.value?.is_final === true)
+
+/*
+| Los campos técnicos dependen de la subcategoría, así que al cambiarla hay que
+| pedirlos de nuevo. Es una recarga PARCIAL —sólo `campos`—: el resto del
+| formulario queda como está y no se pierde lo que la persona venía escribiendo.
+|
+| Los valores ya tipeados se descartan a propósito: pertenecen a campos de otra
+| subcategoría y arrastrarlos escribiría un valor en un campo que no es el que
+| la persona completó. Lo ya GUARDADO, en cambio, se conserva en la base y
+| reaparece si vuelve (ADR-027).
+*/
+watch(() => form.work_subcategory_id, (nueva, anterior) => {
+    if (! nueva || nueva === anterior) return
+
+    form.campos = {}
+
+    router.reload({
+        only: ['campos', 'faltantes'],
+        data: { subcategoria: nueva },
+        preserveState: true,
+        preserveScroll: true,
+    })
+})
 
 // Al salir de un estado finalizador la fecha real NO se borra: es un dato
 // histórico y el servidor la conserva (ADR-008). Lo que cambia es que deja de
@@ -234,6 +261,14 @@ function enviarAPapelera () {
                     Partido de Ramallo, provincia de Buenos Aires. La búsqueda de direcciones llega en una
                     etapa próxima; por ahora la ubicación se marca en el mapa.
                 </p>
+            </RmlCard>
+
+            <RmlCard title="Campos técnicos" style="margin-top: var(--rml-space-5)">
+                <CamposTecnicos
+                    v-model="form.campos"
+                    :campos="campos"
+                    :faltantes="faltantes"
+                />
             </RmlCard>
 
             <RmlCard v-if="editando" title="Fotografías" style="margin-top: var(--rml-space-5)">

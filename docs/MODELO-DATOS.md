@@ -96,6 +96,18 @@ distintas pueden tener cada una su campo `superficie`. `public_visible` y
 `live_visible` arrancan en `false`: un campo se publica cuando alguien lo decide,
 no por omisión.
 
+**La unión de alcances y su desempate (F2).** Una obra presenta los campos de su
+categoría más los de su subcategoría, sin códigos duplicados. Ante el mismo
+código en los dos alcances **gana la subcategoría**: quien definió ahí un campo
+que la categoría ya tenía lo hizo para afinarlo, no para duplicarlo, y el
+criterio contrario haría inútil definir un campo específico. Lo resuelve
+`App\Support\Fields\WorkFieldSet`.
+
+**Los valores fuera de alcance se conservan (ADR-027).** Si una obra cambia de
+subcategoría, los valores de campos que dejan de aplicar no se borran: quedan
+guardados, dejan de mostrarse y reaparecen si la obra vuelve. Distinto es vaciar
+un campo que **sigue** a la vista, que sí borra su valor —ahí vaciar es corregir—.
+
 ### `system_sequences` · `app_settings`
 
 `system_sequences` es una fila por secuencia con su `current_value`; hoy la única
