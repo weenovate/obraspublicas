@@ -8,6 +8,7 @@ use Database\Factories\WorkFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use RuntimeException;
@@ -81,6 +82,33 @@ class Work extends Model
     public function subcategory(): BelongsTo
     {
         return $this->belongsTo(WorkSubcategory::class, 'work_subcategory_id');
+    }
+
+    /**
+     * Todas las fotos vigentes, en cualquier estado.
+     *
+     * Es la que ve el backoffice: quien carga necesita ver también las que están
+     * procesándose o fallaron, porque son las que tiene que reintentar.
+     *
+     * @return HasMany<WorkPhoto, $this>
+     */
+    public function photos(): HasMany
+    {
+        return $this->hasMany(WorkPhoto::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * Sólo las publicables.
+     *
+     * La que usan la web pública y LIVE. Una foto en `PENDING` o `FAILED` no se
+     * publica nunca (ADR-019), y tenerlo como relación evita que cada consulta
+     * vuelva a acordarse del filtro.
+     *
+     * @return HasMany<WorkPhoto, $this>
+     */
+    public function publishedPhotos(): HasMany
+    {
+        return $this->photos()->where('status', WorkPhoto::STATUS_READY);
     }
 
     /** @return BelongsTo<WorkStatus, $this> */
