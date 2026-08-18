@@ -37,6 +37,47 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Los E2E instalan un navegador y corren 114 casos en seis viewports:
+      # varios minutos y una descarga grande. Un cambio que sólo toca `.md` no
+      # puede romperlos, así que se saltean.
+      #
+      # NO se usa `paths-ignore` a nivel del workflow: eso haría que la
+      # verificación no se ejecute EN ABSOLUTO, y un check requerido que nunca
+      # reporta bloquea el merge en lugar de agilizarlo. Acá el job corre igual
+      # y reporta verde; lo único que se omite son los tres pasos caros.
+      #
+      # Ante cualquier duda —no se pudo calcular el diff, la lista vino vacía—
+      # se corre TODO. El modo de falla seguro es gastar minutos de más, nunca
+      # saltear pruebas que hacían falta.
+      - name: ¿El cambio toca sólo documentación?
+        id: alcance
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags origin "${{ github.base_ref }}" >/dev/null 2>&1 || true
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
+
+          if ! CAMBIOS=$(git diff --name-only "$BASE"...HEAD 2>/dev/null) || [ -z "$CAMBIOS" ]; then
+            echo "No se pudo determinar el alcance: se corre todo."
+            echo "solo_docs=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Archivos cambiados:"
+          echo "$CAMBIOS"
+
+          if echo "$CAMBIOS" | grep -qvE '\.md$'; then
+            echo "Hay cambios que no son documentacion: se corre todo."
+            echo "solo_docs=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Solo documentacion: se saltean los E2E."
+            echo "solo_docs=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Configurar PHP 8.4
         uses: shivammathur/setup-php@v2
@@ -140,6 +181,7 @@ jobs:
 
       # --- E2E -------------------------------------------------------------
       - name: Instalar Chromium para Playwright
+        if: steps.alcance.outputs.solo_docs != 'true'
         run: npx playwright install --with-deps chromium
 
       # Los cinco estados base son datos de SISTEMA (`is_system`, RF-OBR-008):
@@ -147,6 +189,7 @@ jobs:
       # sin ellos no representa a ninguna instalación, y de hecho hacía fallar el
       # alta de obras por un camino que en producción no existe.
       - name: Sembrar el catálogo base para los E2E
+        if: steps.alcance.outputs.solo_docs != 'true'
         env:
           DB_CONNECTION: mariadb
           DB_HOST: 127.0.0.1
@@ -157,6 +200,7 @@ jobs:
         run: php artisan db:seed --class=CatalogoBaseSeeder --force
 
       - name: E2E (Playwright)
+        if: steps.alcance.outputs.solo_docs != 'true'
         env:
           DB_CONNECTION: mariadb
           DB_HOST: 127.0.0.1
