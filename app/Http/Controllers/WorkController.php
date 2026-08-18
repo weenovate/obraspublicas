@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Work;
+use App\Models\WorkPhoto;
 use App\Models\WorkStatus;
 use App\Models\WorkSubcategory;
+use App\Support\Settings\AppSettings;
 use App\Support\Work\ConcurrentEditException;
 use App\Support\Work\GeometryRuleViolation;
 use App\Support\Work\WorkGeometry;
@@ -15,6 +17,7 @@ use App\Support\Work\WorkWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -122,6 +125,10 @@ final class WorkController
                 'lock_version' => $work->lock_version,
                 'geometria' => $this->geometriaComoGeoJson($work),
             ],
+            'fotos' => $this->fotos($work),
+            // El máximo lo fija el Administrador (RF-CFG-001), así que viaja
+            // con la página en lugar de estar escrito en el componente.
+            'maxFotos' => (int) app(AppSettings::class)->get(AppSettings::MAX_PHOTOS_PER_WORK),
         ]));
     }
 
@@ -261,6 +268,37 @@ final class WorkController
             'name', 'description', 'start_date', 'estimated_end_date', 'actual_end_date',
             'street', 'street_number', 'locality',
         ]));
+    }
+
+    /**
+     * Las fotos de la obra, con las URL ya firmadas.
+     *
+     * Se firman ACÁ y no en el cliente porque la firma la emite el servidor: es
+     * lo único que la hace confiable. El cliente recibe una URL usable y no
+     * sabe —ni necesita saber— dónde vive el archivo.
+     *
+     * Las que no llegaron a `READY` viajan sin URL: no hay derivado que mostrar,
+     * y la galería dibuja su estado en lugar de una imagen rota.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function fotos(Work $work): array
+    {
+        return $work->photos()->get()->map(fn (WorkPhoto $foto): array => [
+            'id' => $foto->id,
+            'status' => $foto->status,
+            'original_filename' => $foto->original_filename,
+            'caption' => $foto->caption,
+            'sort_order' => $foto->sort_order,
+            'failure_reason' => $foto->failure_reason,
+            'se_puede_reintentar' => $foto->status === WorkPhoto::STATUS_FAILED,
+            'url_thumb' => $foto->esPublicable()
+                ? URL::signedRoute('fotos.ver', ['photo' => $foto->id, 'tamano' => 'thumb'])
+                : null,
+            'url_large' => $foto->esPublicable()
+                ? URL::signedRoute('fotos.ver', ['photo' => $foto->id, 'tamano' => 'large'])
+                : null,
+        ])->all();
     }
 
     /**

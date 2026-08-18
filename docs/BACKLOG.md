@@ -17,7 +17,7 @@ convertir el backlog en una lista de deseos.
 | **F0** ✅ | Fundaciones, tooling, CI, seguridad base, login mínimo con throttle auditado, RDS con tema oscuro medido y primitivos Vue, arnés Playwright, PoC espacial y matriz | — | — |
 | **F1-A** ✅ | Nueve migraciones y seeders, auth completa, roles y políticas, CRUD de usuarios, sesiones revocables, los cinco catálogos con sus reglas de inmutabilidad, campos técnicos, configuración tipada, generador de códigos | 002, 024 | **014, 025** |
 | **F1-B** ✅ | CRUD de obras con geometría manual, fechas, concurrencia optimista, papelera lógica, editores cartográficos | 001, 007, 010, 015, 018 | **002, 003, 004, 008, 009** |
-| **F2** | Ciclo completo de fotos, formulario dinámico, cambio incompatible, galería con estados | 013 | **010, 011, 012** |
+| **F2** ◐ | Ciclo completo de fotos, formulario dinámico, cambio incompatible, galería con estados | 013 | **010, 011, 012** |
 | **F3** | Nominatim, geocodificación inversa, pin móvil, ruta ORS con previsualización y fallback, límites municipales, E2E de editores | — | **005, 006, 007** |
 | **F4** | SPA, capas, filtros, clustering, URL compartible, allowlist, contrato de rendimiento, caché versionado, tema, puente Leaflet completo | 001 | **013, 019, 020, 021** |
 | **F5** | Kiosco, sesión persistente, recorrido automático, persistencia local, reconexión | 024 | **001, 015, 022, 022a–g, 023** |
@@ -173,3 +173,29 @@ A incorporar por enmienda al spec, verificables en F1:
 - Volver a un estado no finalizador **no borra** el dato y el cambio queda auditado.
 - Un estado propio marcado como finalizador se comporta igual que `COMPLETED`.
 - El filtro por rango usa el intervalo efectivo en las tres superficies.
+
+---
+
+## Lo que F2 lleva verificado
+
+El ciclo de fotografías está completo; los campos técnicos dinámicos en el
+formulario de obra siguen pendientes.
+
+| Verificación | Dónde | Sostiene |
+|---|---|---|
+| La foto se guarda en `PENDING` y el archivo existe **antes** de encolar | `tests/Feature/Fotos/CicloDeFotoTest.php` | ADR-019, y que el job no corra una carrera propia |
+| Los derivados salen a 1600 y 400 px conservando la proporción | ídem | La galería y la ficha |
+| Una foto más chica que el derivado **no se agranda** | ídem | Que `scaleDown` no invente información |
+| Un archivo corrupto queda `FAILED` con motivo legible, sin filtrar rutas ni trazas | ídem | Diagnóstico sin exponer el servidor |
+| Reprocesar deja el mismo resultado, sin duplicar filas ni archivos | ídem | **La idempotencia de ADR-019** |
+| El job ignora una foto ya `READY` y no explota si la borraron | ídem | Reintentos de cola seguros |
+| **La obra sigue publicada aunque todas sus fotos fallen** | ídem | ADR-019 contra la sección 14 del spec |
+| El archivo **no** es alcanzable sin firma, ni con sesión iniciada | `tests/Feature/Fotos/PantallaDeFotosTest.php` | **RNF-SEC-005** |
+| Una firma manipulada —mismo token, otro identificador— se rechaza | ídem | Que la URL no sea adivinable |
+| Una foto que no llegó a `READY` no se sirve, aunque la URL esté firmada | ídem | ADR-019 |
+| El tamaño se restringe en la ruta: no se puede pedir un archivo arbitrario | ídem | RNF-SEC-003 |
+| Subir, ver la miniatura procesada y quitarla, en el navegador | `tests/e2e/fotos.spec.js` | **CA-010, CA-011, CA-012** |
+
+**Falta para cerrar F2:** los campos técnicos dinámicos en el formulario de obra,
+con el manejo del cambio incompatible. Las definiciones existen desde F1-A; lo
+que no existe todavía es el render y la carga de valores.
