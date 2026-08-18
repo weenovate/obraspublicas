@@ -85,6 +85,17 @@ class Work extends Model
     }
 
     /**
+     * Los valores de campos técnicos cargados, incluidos los que quedaron fuera
+     * de alcance tras un cambio de subcategoría (ADR-027).
+     *
+     * @return HasMany<WorkFieldValue, $this>
+     */
+    public function fieldValues(): HasMany
+    {
+        return $this->hasMany(WorkFieldValue::class);
+    }
+
+    /**
      * Todas las fotos vigentes, en cualquier estado.
      *
      * Es la que ve el backoffice: quien carga necesita ver también las que están

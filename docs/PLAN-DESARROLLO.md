@@ -18,7 +18,7 @@ razonamiento de cada decisión está en [`ARQUITECTURA.md`](ARQUITECTURA.md).
 | **G4** — Especificación del kiosco | ⛔ Pendiente. Bloquea la aceptación de F5 |
 | **G5** — Autorización escrita del RDS | ⛔ Pendiente. Bloquea la habilitación de la URL pública |
 | **F1-B** — Obras con geometría | ✅ **Completada** |
-| **F2** — Fotos y campos dinámicos | ◐ **En curso**: el ciclo de fotos está completo; faltan los campos dinámicos |
+| **F2** — Fotos y campos dinámicos | ✅ **Completada** |
 | **F3** a **F7** | No iniciadas |
 
 ---
@@ -125,7 +125,7 @@ Lo que quedó, y lo que costó decidir cada cosa:
 asistido sobre calles son de F3, y los campos técnicos dinámicos en el formulario
 de obra son de F2.
 
-### F2 — Fotos y campos dinámicos (10–12) ◐
+### F2 — Fotos y campos dinámicos (10–12) ✅
 
 Ciclo completo de fotografías con cola, reintentos e idempotencia · formulario
 dinámico · galería con estados `PENDING`/`FAILED` y reintento.
@@ -145,8 +145,14 @@ Dos decisiones que quedaron tomadas acá:
   firma, no la cookie. Así la misma ruta sirve al backoffice hoy y a la web
   pública de F4, donde no hay sesión.
 
-**Falta:** los campos técnicos dinámicos en el formulario de obra, con el manejo
-del cambio incompatible.
+**Los campos técnicos dinámicos** cierran la fase. Las definiciones existían
+desde F1-A pero el formulario de obra no las mostraba: un campo definido no
+servía para nada. Ahora se resuelve la unión de alcances, cada tipo se dibuja con
+su control y los valores se validan contra lo que declaró el Administrador.
+
+La decisión que quedó tomada acá es **ADR-027**: los valores que quedan fuera de
+alcance al cambiar de subcategoría **se conservan ocultos** en lugar de borrarse.
+Elegir mal en un desplegable no debería destruir carga manual.
 
 ### F3 — Cartografía asistida (13–15)
 

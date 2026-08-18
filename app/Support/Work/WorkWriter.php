@@ -9,6 +9,7 @@ use App\Models\Work;
 use App\Models\WorkStatus;
 use App\Models\WorkSubcategory;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Fields\WorkFieldValueWriter;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -61,10 +62,12 @@ final class WorkWriter
     public function __construct(
         private readonly WorkCodeGenerator $codigos,
         private readonly AuditRecorder $audit,
+        private readonly WorkFieldValueWriter $campos,
     ) {}
 
     /**
      * @param  array<string, mixed>  $atributos
+     * @param  array<array-key, mixed>  $camposTecnicos  Valores por id de definición
      *
      * @throws WorkRuleViolation
      */
@@ -74,8 +77,9 @@ final class WorkWriter
         WorkSubcategory $subcategoria,
         WorkStatus $estado,
         ?User $actor = null,
+        array $camposTecnicos = [],
     ): Work {
-        return DB::transaction(function () use ($atributos, $geometria, $subcategoria, $estado, $actor): Work {
+        return DB::transaction(function () use ($atributos, $geometria, $subcategoria, $estado, $actor, $camposTecnicos): Work {
             $fechas = $this->fechasValidadas($atributos, $estado);
             $codigo = $this->codigos->next();
 
@@ -102,6 +106,11 @@ final class WorkWriter
 
             $this->verificarInvariante($work, $subcategoria);
 
+            // Dentro de la transacción: si algo de esto falla, el alta entera se
+            // revierte y no queda ni la obra ni un valor suelto.
+            $work->setRelation('subcategory', $subcategoria);
+            $this->campos->guardar($work, $camposTecnicos);
+
             $this->audit->registrar(
                 action: 'work.created',
                 entityType: $work->getTable(),
@@ -118,6 +127,7 @@ final class WorkWriter
     /**
      * @param  array<string, mixed>  $atributos
      * @param  WorkGeometry|null  $geometria  `null` deja la geometría como está
+     * @param  array<array-key, mixed>  $camposTecnicos  Valores por id de definición
      *
      * @throws WorkRuleViolation|ConcurrentEditException
      */
@@ -129,9 +139,10 @@ final class WorkWriter
         WorkStatus $estado,
         int $versionEsperada,
         ?User $actor = null,
+        array $camposTecnicos = [],
     ): Work {
         return DB::transaction(function () use (
-            $work, $atributos, $geometria, $subcategoria, $estado, $versionEsperada, $actor
+            $work, $atributos, $geometria, $subcategoria, $estado, $versionEsperada, $actor, $camposTecnicos
         ): Work {
             $antes = $this->snapshot($work);
             $fechas = $this->fechasValidadas($atributos, $estado, $work);
@@ -168,6 +179,12 @@ final class WorkWriter
             if ($geometria !== null) {
                 $this->verificarInvariante($work, $subcategoria);
             }
+
+            // Los valores se guardan contra la subcategoría NUEVA: es la que
+            // decide qué campos aplican. Los que dejaron de aplicar no se tocan
+            // y quedan como históricos (ADR-027).
+            $work->setRelation('subcategory', $subcategoria);
+            $this->campos->guardar($work, $camposTecnicos);
 
             $this->audit->registrar(
                 action: 'work.updated',

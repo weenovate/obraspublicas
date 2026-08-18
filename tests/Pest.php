@@ -29,4 +29,4 @@ pest()->extend(TestCase::class)->in('Arch');
 | fachada `DB`: verifican una guarda que `RefreshDatabase` haría inobservable en
 | `Feature`, porque allá siempre hay una transacción abierta.
 */
-pest()->extend(TestCase::class)->in('Unit/Work');
+pest()->extend(TestCase::class)->in('Unit/Work', 'Unit/Fields');

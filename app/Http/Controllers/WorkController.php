@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Work;
+use App\Models\WorkFieldDefinition;
 use App\Models\WorkPhoto;
 use App\Models\WorkStatus;
 use App\Models\WorkSubcategory;
+use App\Support\Fields\FieldRuleViolation;
+use App\Support\Fields\WorkFieldSet;
 use App\Support\Settings\AppSettings;
 use App\Support\Work\ConcurrentEditException;
 use App\Support\Work\GeometryRuleViolation;
@@ -78,9 +81,24 @@ final class WorkController
         ]);
     }
 
-    public function create(): InertiaResponse
+    public function create(Request $request): InertiaResponse
     {
-        return Inertia::render('Obras/Formulario', $this->datosDelFormulario());
+        $datos = $this->datosDelFormulario();
+
+        // La subcategoría elegida define qué campos técnicos aplican. Viaja por
+        // la consulta para que cambiar el desplegable haga una recarga parcial
+        // en lugar de tener que enviar el formulario para enterarse.
+        //
+        // Sin parámetro se usa LA PRIMERA DE LA LISTA, que es exactamente la que
+        // el formulario deja preseleccionada. Devolver una lista vacía haría que
+        // la primera carga dijera «esta subcategoría no tiene campos» aunque los
+        // tenga, y sólo aparecieran al cambiar el desplegable y volver.
+        $elegida = $request->integer('subcategoria')
+            ?: ($datos['subcategorias'][0]['id'] ?? null);
+
+        return Inertia::render('Obras/Formulario', array_merge($datos, [
+            'campos' => $this->camposDe($elegida),
+        ]));
     }
 
     public function store(Request $request): RedirectResponse
@@ -95,13 +113,14 @@ final class WorkController
             subcategoria: $subcategoria,
             estado: $estado,
             actor: $request->user(),
+            camposTecnicos: $this->camposTecnicos($request),
         ));
 
         return redirect()->route('obras.edit', $obra)
             ->with('success', "Obra {$obra->code} creada.");
     }
 
-    public function edit(Work $work): InertiaResponse
+    public function edit(Request $request, Work $work): InertiaResponse
     {
         return Inertia::render('Obras/Formulario', array_merge($this->datosDelFormulario(), [
             'obra' => [
@@ -125,6 +144,12 @@ final class WorkController
                 'lock_version' => $work->lock_version,
                 'geometria' => $this->geometriaComoGeoJson($work),
             ],
+            'campos' => $this->camposDe(
+                $request->integer('subcategoria') ?: $work->work_subcategory_id,
+                $work,
+            ),
+            'faltantes' => app(WorkFieldSet::class)->faltantesObligatorios($work)
+                ->map(fn (WorkFieldDefinition $d): string => $d->label)->all(),
             'fotos' => $this->fotos($work),
             // El máximo lo fija el Administrador (RF-CFG-001), así que viaja
             // con la página en lugar de estar escrito en el componente.
@@ -148,6 +173,7 @@ final class WorkController
             estado: $estado,
             versionEsperada: (int) $datos['lock_version'],
             actor: $request->user(),
+            camposTecnicos: $this->camposTecnicos($request),
         ));
 
         return back()->with('success', 'Obra actualizada.');
@@ -181,6 +207,8 @@ final class WorkController
             throw ValidationException::withMessages([
                 $e instanceof GeometryRuleViolation ? 'geometria' : 'fechas' => $e->getMessage(),
             ]);
+        } catch (FieldRuleViolation $e) {
+            throw ValidationException::withMessages(['campos' => $e->getMessage()]);
         } catch (ConcurrentEditException $e) {
             // 409 sería más preciso en HTTP, pero Inertia lo trataría como un
             // error de página y perdería lo que la persona escribió. Un error de
@@ -271,6 +299,68 @@ final class WorkController
     }
 
     /**
+     * Los valores de campos técnicos que llegaron en el envío.
+     *
+     * No se validan acá: la validación depende del tipo declarado de cada campo,
+     * que sólo conoce el dominio. `WorkFieldValueWriter` la hace, y su excepción
+     * vuelve como error de formulario.
+     *
+     * @return array<array-key, mixed>
+     */
+    private function camposTecnicos(Request $request): array
+    {
+        $valores = $request->input('campos', []);
+
+        return is_array($valores) ? $valores : [];
+    }
+
+    /**
+     * Los campos técnicos que aplican, con su valor cargado si lo hay.
+     *
+     * El valor sale de la columna que corresponde al tipo, usando el mismo mapa
+     * que valida al guardar: si alguna vez divergieran, el formulario mostraría
+     * un dato y el servidor guardaría otro.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function camposDe(?int $subcategoriaId, ?Work $work = null): array
+    {
+        $subcategoria = $subcategoriaId === null
+            ? null
+            : WorkSubcategory::query()->find($subcategoriaId);
+
+        if ($subcategoria === null) {
+            return [];
+        }
+
+        $valores = $work === null
+            ? collect()
+            : $work->fieldValues()->get()->keyBy('work_field_definition_id');
+
+        return app(WorkFieldSet::class)->paraSubcategoria($subcategoria)
+            ->map(function (WorkFieldDefinition $d) use ($valores): array {
+                $fila = $valores->get($d->id);
+
+                return [
+                    'id' => $d->id,
+                    'code' => $d->code,
+                    'label' => $d->label,
+                    'help_text' => $d->help_text,
+                    'data_type' => $d->data_type,
+                    'unit' => $d->unit,
+                    'min_value' => $d->min_value === null ? null : (float) $d->min_value,
+                    'max_value' => $d->max_value === null ? null : (float) $d->max_value,
+                    'is_required' => $d->is_required,
+                    'valor' => $fila?->getAttribute($d->valueColumn()),
+                    'opciones' => $d->data_type === WorkFieldDefinition::TYPE_SELECT
+                        ? $d->options()->where('is_active', true)->orderBy('sort_order')->orderBy('id')
+                            ->get(['id', 'label'])->all()
+                        : [],
+                ];
+            })->all();
+    }
+
+    /**
      * Las fotos de la obra, con las URL ya firmadas.
      *
      * Se firman ACÁ y no en el cliente porque la firma la emite el servidor: es
@@ -346,6 +436,10 @@ final class WorkController
             'geometria' => [$obligarGeometria ? 'required' : 'nullable', 'array'],
             'geometria.type' => ['required_with:geometria', 'string'],
             'geometria.coordinates' => ['required_with:geometria', 'array'],
+            // Los valores llegan como un mapa `id => valor`. El tipo de cada uno
+            // lo valida el dominio, que es el único que sabe qué declaró el
+            // Administrador para ese campo.
+            'campos' => ['nullable', 'array'],
             'lock_version' => [$obligarGeometria ? 'nullable' : 'required', 'integer', 'min:0'],
         ], [], [
             'name' => 'nombre',

@@ -17,7 +17,7 @@ convertir el backlog en una lista de deseos.
 | **F0** ✅ | Fundaciones, tooling, CI, seguridad base, login mínimo con throttle auditado, RDS con tema oscuro medido y primitivos Vue, arnés Playwright, PoC espacial y matriz | — | — |
 | **F1-A** ✅ | Nueve migraciones y seeders, auth completa, roles y políticas, CRUD de usuarios, sesiones revocables, los cinco catálogos con sus reglas de inmutabilidad, campos técnicos, configuración tipada, generador de códigos | 002, 024 | **014, 025** |
 | **F1-B** ✅ | CRUD de obras con geometría manual, fechas, concurrencia optimista, papelera lógica, editores cartográficos | 001, 007, 010, 015, 018 | **002, 003, 004, 008, 009** |
-| **F2** ◐ | Ciclo completo de fotos, formulario dinámico, cambio incompatible, galería con estados | 013 | **010, 011, 012** |
+| **F2** ✅ | Ciclo completo de fotos, formulario dinámico, cambio incompatible, galería con estados | 013 | **010, 011, 012** |
 | **F3** | Nominatim, geocodificación inversa, pin móvil, ruta ORS con previsualización y fallback, límites municipales, E2E de editores | — | **005, 006, 007** |
 | **F4** | SPA, capas, filtros, clustering, URL compartible, allowlist, contrato de rendimiento, caché versionado, tema, puente Leaflet completo | 001 | **013, 019, 020, 021** |
 | **F5** | Kiosco, sesión persistente, recorrido automático, persistencia local, reconexión | 024 | **001, 015, 022, 022a–g, 023** |
@@ -196,6 +196,22 @@ formulario de obra siguen pendientes.
 | El tamaño se restringe en la ruta: no se puede pedir un archivo arbitrario | ídem | RNF-SEC-003 |
 | Subir, ver la miniatura procesada y quitarla, en el navegador | `tests/e2e/fotos.spec.js` | **CA-010, CA-011, CA-012** |
 
-**Falta para cerrar F2:** los campos técnicos dinámicos en el formulario de obra,
-con el manejo del cambio incompatible. Las definiciones existen desde F1-A; lo
-que no existe todavía es el render y la carga de valores.
+### Y los campos técnicos dinámicos
+
+| Verificación | Dónde | Sostiene |
+|---|---|---|
+| La unión de alcances no duplica códigos, y ante un empate gana la subcategoría | `tests/Feature/Campos/CamposDeObraTest.php` | RF-DIN-001 |
+| Cada tipo va en su columna y **exactamente una** queda con valor | ídem | spec 9.3 |
+| Un valor que no corresponde al tipo se rechaza, incluido un decimal en un entero | ídem | RF-DIN-002 |
+| El rango se aplica sólo a numéricos, y el mensaje trae la unidad | ídem | RF-DIN-002 |
+| `SELECT` rechaza una opción de otra definición o desactivada | ídem | RF-CAT-005, y una petición manipulada |
+| Volver obligatorio un campo **no** invalida obras previas, y quedan marcadas como incompletas | ídem | RF-DIN-005 |
+| Un valor fuera de alcance sobrevive al cambio de subcategoría y reaparece al volver | ídem | **ADR-027** |
+| Vaciar un campo que sigue en alcance sí borra su valor | ídem | La contracara de ADR-027 |
+| El falso de un booleano se guarda en lugar de tratarse como vacío | ídem | Que `empty()` no coma datos |
+| Un valor inválido revierte el alta entera | ídem | ADR-004 aplicado a los campos |
+| Los valores se escriben sólo dentro de la transacción de la obra | `tests/Unit/Fields` | ídem |
+| Cada tipo se dibuja con su control, y los valores vuelven al reabrir | `tests/e2e/campos.spec.js` | **CA-013** |
+
+**F2 queda cerrada.** Las trece tablas del modelo existen, el ciclo de fotos está
+completo y los campos técnicos se cargan de punta a punta.

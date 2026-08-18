@@ -765,6 +765,38 @@ conflicto.
 
 ---
 
+## ADR-027 · Los valores de campos fuera de alcance se conservan, no se borran
+
+**El problema.** Los campos técnicos se definen por categoría o por subcategoría,
+y una obra presenta la unión de ambos alcances (RF-DIN-001). Cuando una obra
+cambia de subcategoría, el conjunto de campos cambia con ella: los valores ya
+cargados para campos que dejaron de aplicar quedan sin lugar donde mostrarse.
+
+**Las tres salidas posibles**, y por qué se elige la primera:
+
+| Opción | Qué pasa |
+|---|---|
+| **Conservarlos ocultos** ✅ | El valor queda en la base, deja de mostrarse y de publicarse. Si la obra vuelve a la subcategoría anterior, reaparece intacto |
+| Borrarlos al guardar | La base queda sin datos inalcanzables, pero un cambio por error destruye carga manual sin vuelta atrás |
+| Bloquear el cambio | Obliga a limpiar antes. Es lo más estricto y lo más molesto, y no protege de nada que las otras dos no protejan |
+
+**Decisión: se conservan.** Es el mismo criterio que ADR-008 aplica a
+`actual_end_date` —el dato histórico se conserva aunque deje de gobernar la
+fecha efectiva— y la razón es la misma: elegir mal en un desplegable no debería
+destruir trabajo. Un valor invisible no molesta a nadie; uno borrado no vuelve.
+
+**Lo que NO cubre esta decisión**, y conviene no confundir: si el campo SIGUE en
+alcance y la persona lo deja vacío, el valor **sí** se borra. Ahí vaciar es
+corregir una carga equivocada, y conservar el valor viejo contradiría lo que la
+persona ve en pantalla. La diferencia es si el campo está a la vista o no.
+
+**Consecuencia registrada.** Con el tiempo puede quedar en la base algún valor
+que ya nadie ve. No se limpia automáticamente: hacerlo sería la opción de borrar
+con otro nombre. Si alguna vez hace falta, va con la papelera de F6, donde
+eliminar es una acción explícita y auditada.
+
+---
+
 ## Notas del entorno de construcción
 
 Dos limitaciones del entorno donde se ejecutó esta iteración, que **no** afectan al
