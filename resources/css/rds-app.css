@@ -355,3 +355,75 @@
 .rml-kiosk .rml-badge {
   font-size: 0.9em;
 }
+
+/* ---- Galería de fotos (F2) ----------------------------------------------
+   Cuadrícula que se adapta sola: `auto-fill` con un mínimo evita tener que
+   declarar cuántas columnas van en cada viewport, que es lo que después se
+   desacomoda cuando aparece un tamaño de pantalla nuevo. */
+
+.rml-galeria {
+  list-style: none;
+  margin: var(--rml-space-4) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--rml-space-4);
+}
+
+.rml-galeria-item {
+  border: 1px solid var(--rml-border-subtle);
+  border-radius: var(--rml-radius-md, 8px);
+  background: var(--rml-surface-card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rml-galeria-miniatura {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: none;
+  background: var(--rml-surface-sunken);
+  cursor: pointer;
+}
+
+.rml-galeria-miniatura img {
+  width: 100%;
+  height: 100%;
+  /* `cover` y no `contain`: la cuadrícula se ve pareja aunque las fotos vengan
+     con proporciones distintas, que es lo normal entre teléfonos y cámaras. */
+  object-fit: cover;
+  display: block;
+}
+
+.rml-galeria-miniatura:focus-visible {
+  outline: none;
+  box-shadow: var(--rml-focus-ring);
+}
+
+/* Cuando no hay imagen que mostrar —procesando o fallida— el recuadro no queda
+   vacío: dice en qué estado está, que es la información que hace falta. */
+.rml-galeria-sin-imagen {
+  display: grid;
+  place-items: center;
+  cursor: default;
+  color: var(--rml-text-muted);
+  font-size: var(--rml-text-2xl, 1.5rem);
+}
+
+.rml-galeria-datos {
+  padding: var(--rml-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--rml-space-2);
+  min-width: 0;
+}
+
+.rml-galeria-datos .rml-hint {
+  /* Un nombre de archivo largo no puede ensanchar la celda de la cuadrícula. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

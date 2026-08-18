@@ -18,7 +18,8 @@ razonamiento de cada decisión está en [`ARQUITECTURA.md`](ARQUITECTURA.md).
 | **G4** — Especificación del kiosco | ⛔ Pendiente. Bloquea la aceptación de F5 |
 | **G5** — Autorización escrita del RDS | ⛔ Pendiente. Bloquea la habilitación de la URL pública |
 | **F1-B** — Obras con geometría | ✅ **Completada** |
-| **F2** a **F7** | No iniciadas |
+| **F2** — Fotos y campos dinámicos | ◐ **En curso**: el ciclo de fotos está completo; faltan los campos dinámicos |
+| **F3** a **F7** | No iniciadas |
 
 ---
 
@@ -124,10 +125,28 @@ Lo que quedó, y lo que costó decidir cada cosa:
 asistido sobre calles son de F3, y los campos técnicos dinámicos en el formulario
 de obra son de F2.
 
-### F2 — Fotos y campos dinámicos (10–12)
+### F2 — Fotos y campos dinámicos (10–12) ◐
 
 Ciclo completo de fotografías con cola, reintentos e idempotencia · formulario
 dinámico · galería con estados `PENDING`/`FAILED` y reintento.
+
+**Listo:** `work_photos` —la decimotercera y última tabla—, el procesamiento con
+derivados a 1600 y 400 px, la cola idempotente con su tope de reintentos, la
+entrega por URL firmada fuera del document root, y la galería con los tres
+estados y el botón de reintentar.
+
+Dos decisiones que quedaron tomadas acá:
+
+- **El EXIF se descarta al recomprimir**, con `strip: true` explícito. Las fotos
+  de obra se sacan con teléfonos que escriben la ubicación GPS del operario en
+  los metadatos; publicarlas así filtraría dónde estuvo una persona, no dónde
+  está la obra. La orientación se aplica **antes** de descartar.
+- **La ruta de entrega vive fuera del grupo de sesión**: lo que autoriza es la
+  firma, no la cookie. Así la misma ruta sirve al backoffice hoy y a la web
+  pública de F4, donde no hay sesión.
+
+**Falta:** los campos técnicos dinámicos en el formulario de obra, con el manejo
+del cambio incompatible.
 
 ### F3 — Cartografía asistida (13–15)
 

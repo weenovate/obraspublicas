@@ -25,12 +25,15 @@ import RmlCard from '../../Components/rds/RmlCard.vue'
 import RmlButton from '../../Components/rds/RmlButton.vue'
 import RmlAlert from '../../Components/rds/RmlAlert.vue'
 import EditorGeometria from '../../Components/mapa/EditorGeometria.vue'
+import GaleriaDeFotos from '../../Components/fotos/GaleriaDeFotos.vue'
 
 const props = defineProps({
     obra: { type: Object, default: null },
     subcategorias: { type: Array, required: true },
     estados: { type: Array, required: true },
     mapa: { type: Object, required: true },
+    fotos: { type: Array, default: () => [] },
+    maxFotos: { type: Number, default: 10 },
 })
 
 const editando = computed(() => props.obra !== null)
@@ -232,6 +235,14 @@ function enviarAPapelera () {
                     etapa próxima; por ahora la ubicación se marca en el mapa.
                 </p>
             </RmlCard>
+
+            <RmlCard v-if="editando" title="Fotografías" style="margin-top: var(--rml-space-5)">
+                <GaleriaDeFotos :obra-id="obra.id" :fotos="fotos" :maximo="maxFotos" />
+            </RmlCard>
+
+            <p v-else class="rml-hint" style="margin-top: var(--rml-space-5)">
+                Las fotografías se agregan después de crear la obra.
+            </p>
 
             <div class="flex items-center justify-between flex-wrap gap-3" style="margin-top: var(--rml-space-5)">
                 <div class="flex items-center gap-3">

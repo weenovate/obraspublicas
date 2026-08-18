@@ -1,7 +1,7 @@
 # Modelo de datos
 
-13 tablas (spec sección 9). Tras F1-A existen **doce**: falta sólo `work_photos`,
-que llega en F2. Además están `sessions`, `cache` y `jobs`, que necesitan los
+13 tablas (spec sección 9). Con F2 están **las trece**: `work_photos` fue la
+última en entrar. Además están `sessions`, `cache` y `jobs`, que necesitan los
 drivers.
 
 `works` y `work_field_values` entraron en F1-A **como esquema, no como CRUD**: las
@@ -209,3 +209,44 @@ fácil de cometer acá.
   coincide con `data_type` (spec 9.3).
 - `$fillable` explícito en todo modelo; `$guarded = []` está prohibido y un test de
   arquitectura lo verifica.
+
+---
+
+## `work_photos`
+
+La decimotercera tabla (F2, ADR-019).
+
+| Columna | Tipo | Nota |
+|---|---|---|
+| `work_id` | FK | `cascadeOnDelete`: al eliminar definitivamente una obra se van sus fotos |
+| `status` | enum | `PENDING` → `READY` \| `FAILED`. **Sólo `READY` se publica** |
+| `original_filename` | string | Lo que subió la persona, para poder decirle cuál falló |
+| `disk` | string | Guardado **por fila**: permite migrar a almacenamiento de objetos sin mover lo viejo |
+| `path_original` | string | El archivo tal cual llegó |
+| `path_large`, `path_thumb` | string, nullable | Derivados a 1600 y 400 px de lado mayor. **Columnas, no convención de nombres** |
+| `mime_type`, `size_bytes` | | Del archivo recibido |
+| `width`, `height` | int, nullable | Del original, leídos al procesar |
+| `checksum_sha256` | char(64), nullable | Integridad, **no** deduplicación: no es único |
+| `caption`, `sort_order` | | Lo único que edita una persona |
+| `attempts`, `failure_reason`, `processed_at` | | Diagnóstico sin entrar al servidor |
+| `uploaded_by`, `deleted_by` | FK users | Quién subió y quién quitó |
+| `deleted_at` | | Baja lógica, igual que en `works` |
+
+### Por qué los derivados son columnas y no un patrón de nombres
+
+Deducir la ruta de la miniatura a partir de la del original ata el código a un
+esquema de nombres que después no se puede cambiar sin migrar archivos. Con las
+rutas guardadas, agregar un tamaño o cambiar de almacenamiento es una migración
+de filas.
+
+### Por qué el estado vive en la foto y no en la obra
+
+La obra se publica de inmediato y cada foto se suma al llegar a `READY`
+(ADR-019). Una falla de procesamiento no invalida datos ya guardados, que es
+exactamente lo que pide la sección 14 del spec sin bloquear RF-BO-007.
+
+### Dónde viven los archivos
+
+`storage/app/private/fotos/{obra}/`, **fuera del document root**. Se sirven por
+controlador con URL firmada (RNF-SEC-005); el despliegue no corre `storage:link`,
+que publicaría el directorio entero y haría enumerable todo lo subido.
